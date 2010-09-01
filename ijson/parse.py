@@ -89,19 +89,24 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
         yajl.yajl_free(handle)
 
 def parse(*args, **kwargs):
-    path, key = [], ''
+    path = []
     for event, value in basic_parse(*args, **kwargs):
         if event == 'map_key':
-            key = value
-            value = '.'.join(path), key
+            prefix = '.'.join(path[:-1])
+            path[-1] = value
         elif event == 'start_map':
-            path.append(key)
-            key = ''
-            value = '.'.join(path)
+            prefix = '.'.join(path)
+            path.append(None)
         elif event == 'end_map':
-            value = '.'.join(path)
-            key = path.pop()
-        elif event in ('start_array', 'end_array'):
-            value = '.'.join(path + [key])
+            path.pop()
+            prefix = '.'.join(path)
+        elif event == 'start_array':
+            prefix = '.'.join(path)
+            path.append('item')
+        elif event == 'end_array':
+            path.pop()
+            prefix = '.'.join(path)
+        else: # any scalar value
+            prefix = '.'.join(path)
 
-        yield event, value
+        yield prefix, event, value
