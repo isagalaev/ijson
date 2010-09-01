@@ -54,7 +54,7 @@ class ParseCancelledError(JSONError):
     def __init__(self):
         super(ParseCancelledError, self).__init__('Parsing cancelled by a callback')
 
-def parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
+def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
     events = []
 
     def callback(event, func_type, func):
@@ -87,3 +87,21 @@ def parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
             raise JSONError(error)
     finally:
         yajl.yajl_free(handle)
+
+def parse(*args, **kwargs):
+    path, key = [], ''
+    for event, value in basic_parse(*args, **kwargs):
+        if event == 'map_key':
+            key = value
+            value = '.'.join(path), key
+        elif event == 'start_map':
+            path.append(key)
+            key = ''
+            value = '.'.join(path)
+        elif event == 'end_map':
+            value = '.'.join(path)
+            key = path.pop()
+        elif event in ('start_array', 'end_array'):
+            value = '.'.join(path + [key])
+
+        yield event, value
