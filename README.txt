@@ -9,20 +9,21 @@ interface for it.
 Usage
 =====
 
-Basic usage::
+Common usage::
 
     from ijson import parse
 
     f = urlopen('http://.../') # some huge JSON
     parser = parse(f)
     while True:
-        event, value = parser.next()
-        if event == 'start_map':
-            while event != 'end_map':
-                event, value = parser.next()
-                if event == 'map_key' and value == 'title':
-                    event, value = parser.next()
-                    do_something_with(value)
+        prefix, event, value = parser.next()
+        if prefix == 'earth.europe' and event == 'start_array':
+            while prefix.startswith('earth.europe'):
+                prefix, event, value = parser.next()
+                if event == 'map_key':
+                    key = value
+                    prefix, event, value = parser.next()
+                    do_something_with(key, value)
 
 Acknowledgements
 ================
