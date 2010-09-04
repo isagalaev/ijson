@@ -97,6 +97,34 @@ class Parse(unittest.TestCase):
         parse(StringIO(INVALID_JSON))
         self.assertTrue(True)
 
+class Builder(unittest.TestCase):
+    def test_object_builder(self):
+        builder = ObjectBuilder()
+        for event, value in basic_parse(StringIO(JSON)):
+            builder.event(event, value)
+        self.assertEqual(builder.value, {
+            'rows': [
+                {
+                   'string': u'строка',
+                   'null': None,
+                   'boolean': False,
+                   'integer': 0,
+                   'double': Decimal('0.5'),
+                   'long': 10000000000,
+                   'decimal': Decimal('10000000000.5'),
+                },
+                {
+                  'nested': [[1], [2]],
+                },
+            ],
+        })
+
+    def test_scalar_builder(self):
+        builder = ObjectBuilder()
+        for event, value in basic_parse(StringIO(SCALAR_JSON)):
+            builder.event(event, value)
+        self.assertEqual(builder.value, u'value')
+
 
 if __name__ == '__main__':
     unittest.main()
