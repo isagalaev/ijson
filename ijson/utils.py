@@ -1,6 +1,25 @@
 # -*- coding:utf-8 -*-
 
 class ObjectBuilder(object):
+    '''
+    Incrementally builds an object from JSON parser events. Events are passed
+    into the `event` function that accepts two parameters: event type and
+    value. The object being built is available at any time from the `value`
+    attribute.
+
+    Example:
+
+        from StringIO import StringIO
+        from ijson.parse import basic_parse
+        from ijson.utils import ObjectBuilder
+
+        builder = ObjectBuilder()
+        f = StringIO('{"key": "value"})
+        for event, value in basic_parse(f):
+            builder.event(event, value)
+        print builder.value
+
+    '''
     def __init__(self):
         def initial_set(value):
             self.value = value

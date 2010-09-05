@@ -11,6 +11,10 @@ C_DOUBLE = CFUNCTYPE(c_int, c_void_p, c_double)
 C_STR = CFUNCTYPE(c_int, c_void_p, POINTER(c_ubyte), c_uint)
 
 def number(value):
+    '''
+    Helper function casting a string that represents any Javascript number
+    into appropriate Python value: either int or Decimal.
+    '''
     try:
         return int(value)
     except ValueError:
@@ -22,6 +26,8 @@ _callback_data = [
     # inside the parse function.
     ('null', C_EMPTY, lambda: None),
     ('boolean', C_INT, lambda v: bool(v)),
+    # "integer" and "double" aren't actually yielded by yajl since "number"
+    # takes precedence if defined
     ('integer', C_LONG, lambda v, l: int(string_at(v, l))),
     ('double', C_DOUBLE, lambda v, l: float(string_at(v, l))),
     ('number', C_STR, lambda v, l: number(string_at(v, l))),
@@ -55,6 +61,31 @@ class ParseCancelledError(JSONError):
         super(ParseCancelledError, self).__init__('Parsing cancelled by a callback')
 
 def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
+    '''
+    An iterator returning events from a JSON being parsed. This basic parser
+    doesn't maintain any context and just returns parser events from an
+    underlying library, converting them into Python native data types.
+
+    Parameters:
+
+    - f: a readable file-like object with JSON input
+    - allow_comments: tells parser to allow comments in JSON input
+    - check_utf8: if True, parser will cause an error if input is invalid utf-8
+    - buf_size: a size of an input buffer
+
+    Events returned from parser are pairs of (event type, value) and can be as
+    follows:
+
+        ('null', None)
+        ('boolean', <True or False>)
+        ('number', <int or Decimal>)
+        ('string', <unicode>)
+        ('map_key', <str>)
+        ('start_map', None)
+        ('end_map', None)
+        ('start_array', None)
+        ('end_array', None)
+    '''
     events = []
 
     def callback(event, func_type, func):
@@ -89,6 +120,45 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
         yajl.yajl_free(handle)
 
 def parse(*args, **kwargs):
+    '''
+    An iterator returning events from a JSON being parsed. This iterator
+    provides the context of parser events accompanying them with a "prefix"
+    value that contains the path to the nested elements from the root of the
+    JSON document.
+
+    For example, given this document:
+
+        {
+            "array": [1, 2],
+            "map": {
+                "key": "value"
+            }
+        }
+
+    the parser would yield events:
+
+        ('', 'start_map', None)
+        ('', 'map_key', 'array')
+        ('array', 'start_array', None)
+        ('array.item', 'number', 1)
+        ('array.item', 'number', 2)
+        ('array', 'end_array', None)
+        ('', 'map_key', 'map')
+        ('map', 'start_map', None)
+        ('map', 'map_key', 'key')
+        ('map.key', 'string', u'value')
+        ('map', 'end_map', None)
+        ('', 'end_map', None)
+
+    For the list of all available event types refer to `basic_parse` function.
+
+    Parameters:
+
+    - f: a readable file-like object with JSON input
+    - allow_comments: tells parser to allow comments in JSON input
+    - check_utf8: if True, parser will cause an error if input is invalid utf-8
+    - buf_size: a size of an input buffer
+    '''
     path = []
     for event, value in basic_parse(*args, **kwargs):
         if event == 'map_key':
