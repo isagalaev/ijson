@@ -56,10 +56,6 @@ YAJL_ERROR = 3
 class JSONError(Exception):
     pass
 
-class ParseCancelledError(JSONError):
-    def __init__(self):
-        super(ParseCancelledError, self).__init__('Parsing cancelled by a callback')
-
 def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
     '''
     An iterator returning events from a JSON being parsed. This basic parser
@@ -111,9 +107,7 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
                 yield event, value
             events = []
 
-        if result == YAJL_CANCELLED:
-            raise ParseCancelledError()
-        elif result == YAJL_ERROR:
+        if result == YAJL_ERROR:
             error = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
             raise JSONError(error)
     finally:
