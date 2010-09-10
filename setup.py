@@ -3,7 +3,7 @@ from distutils.core import setup
 
 setup(
     name = 'ijson',
-    version = '0.3.0',
+    version = '0.4.0',
     author = 'Ivan Sagalaev',
     author_email = 'Maniac@SoftwareManiacs.Org',
     packages = ['ijson'],
