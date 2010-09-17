@@ -174,3 +174,69 @@ def parse(*args, **kwargs):
             prefix = '.'.join(path)
 
         yield prefix, event, value
+
+
+class ObjectBuilder(object):
+    '''
+    Incrementally builds an object from JSON parser events. Events are passed
+    into the `event` function that accepts two parameters: event type and
+    value. The object being built is available at any time from the `value`
+    attribute.
+
+    Example:
+
+        from StringIO import StringIO
+        from ijson.parse import basic_parse
+        from ijson.utils import ObjectBuilder
+
+        builder = ObjectBuilder()
+        f = StringIO('{"key": "value"})
+        for event, value in basic_parse(f):
+            builder.event(event, value)
+        print builder.value
+
+    '''
+    def __init__(self):
+        def initial_set(value):
+            self.value = value
+        self.containers = [initial_set]
+
+    def event(self, event, value):
+        if event == 'map_key':
+            self.key = value
+        elif event == 'start_map':
+            map = {}
+            self.containers[-1](map)
+            def setter(value):
+                map[self.key] = value
+            self.containers.append(setter)
+        elif event == 'start_array':
+            array = []
+            self.containers[-1](array)
+            self.containers.append(array.append)
+        elif event == 'end_array' or event == 'end_map':
+            self.containers.pop()
+        else:
+            self.containers[-1](value)
+
+def items(file, prefix):
+    '''
+    Iterates over a file objects and everything found under given prefix as
+    as native Python objects.
+    '''
+    parser = iter(parse(file))
+    try:
+        while True:
+            current, event, value = parser.next()
+            if current == prefix:
+                builder = ObjectBuilder()
+                if event in ('start_map', 'start_array'):
+                    end_event = event.replace('start', 'end')
+                    while (current, event) != (prefix, end_event):
+                        builder.event(event, value)
+                        current, event, value = parser.next()
+                else:
+                    builder.event(event, value)
+                yield builder.value
+    except StopIteration:
+        pass

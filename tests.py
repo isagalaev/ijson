@@ -3,13 +3,12 @@ import unittest
 from cStringIO import StringIO
 from decimal import Decimal
 
-from ijson.parse import parse, basic_parse, JSONError
-from ijson.utils import ObjectBuilder
+from ijson import parse, basic_parse, JSONError, ObjectBuilder, items
 
 
 JSON = '''
 {
-  "rows": [
+  "docs": [
     {
       "string": "\u0441\u0442\u0440\u043e\u043a\u0430",
       "null": null,
@@ -20,7 +19,13 @@ JSON = '''
       "decimal": 10000000000.5
     },
     {
-      "nested": [[1], [2]]
+      "meta": [[1], [2]]
+    },
+    {
+      "meta": {"key": "value"}
+    },
+    {
+      "meta": null
     }
   ]
 }
@@ -39,7 +44,7 @@ class Parse(unittest.TestCase):
         events = list(basic_parse(StringIO(JSON)))
         reference = [
             ('start_map', None),
-                ('map_key', 'rows'),
+                ('map_key', 'docs'),
                 ('start_array', None),
                     ('start_map', None),
                         ('map_key', 'string'),
@@ -58,7 +63,7 @@ class Parse(unittest.TestCase):
                         ('number', Decimal('10000000000.5')),
                     ('end_map', None),
                     ('start_map', None),
-                        ('map_key', 'nested'),
+                        ('map_key', 'meta'),
                         ('start_array', None),
                             ('start_array', None),
                                 ('number', 1),
@@ -67,6 +72,17 @@ class Parse(unittest.TestCase):
                                 ('number', 2),
                             ('end_array', None),
                         ('end_array', None),
+                    ('end_map', None),
+                    ('start_map', None),
+                        ('map_key', 'meta'),
+                        ('start_map', None),
+                            ('map_key', 'key'),
+                            ('string', 'value'),
+                        ('end_map', None),
+                    ('end_map', None),
+                    ('start_map', None),
+                        ('map_key', 'meta'),
+                        ('null', None),
                     ('end_map', None),
                 ('end_array', None),
             ('end_map', None),
@@ -78,7 +94,7 @@ class Parse(unittest.TestCase):
         events = parse(StringIO(JSON))
         events = [value
             for prefix, event, value in events
-            if prefix == 'rows.item.nested.item.item'
+            if prefix == 'docs.item.meta.item.item'
         ]
         self.assertEqual(events, [1, 2])
 
@@ -103,7 +119,7 @@ class Builder(unittest.TestCase):
         for event, value in basic_parse(StringIO(JSON)):
             builder.event(event, value)
         self.assertEqual(builder.value, {
-            'rows': [
+            'docs': [
                 {
                    'string': u'строка',
                    'null': None,
@@ -114,7 +130,13 @@ class Builder(unittest.TestCase):
                    'decimal': Decimal('10000000000.5'),
                 },
                 {
-                  'nested': [[1], [2]],
+                    'meta': [[1], [2]],
+                },
+                {
+                    'meta': {'key': 'value'},
+                },
+                {
+                    'meta': None,
                 },
             ],
         })
@@ -124,6 +146,14 @@ class Builder(unittest.TestCase):
         for event, value in basic_parse(StringIO(SCALAR_JSON)):
             builder.event(event, value)
         self.assertEqual(builder.value, u'value')
+
+    def test_items(self):
+        meta = list(items(StringIO(JSON), 'docs.item.meta'))
+        self.assertEqual(meta, [
+            [[1], [2]],
+            {'key': 'value'},
+            None,
+        ])
 
 
 if __name__ == '__main__':
