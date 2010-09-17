@@ -6,24 +6,57 @@ Ijson is a Python wrapper to `YAJL <http://lloyd.github.com/yajl/>`_ which is a
 streaming SAX-like JSON parser. Ijson provides a standard Python iterator
 interface for it.
 
+
 Usage
 =====
 
-Common usage::
+All usage example will be using a JSON document describing geographical
+objects::
+
+    {
+      "earth": {
+        "europe": [
+          {"name": "Paris", "type": "city", "info": { ... }},
+          {"name": "Thames", "type": "river", "info": { ... }},
+          // ...
+        ],
+        "america": [
+          {"name": "Texas", "type": "state", "info": { ... }},
+          // ...
+        ]
+      }
+    }
+
+Most common usage is having ijson yield native Python objects out of a JSON
+stream located under a prefix. Here's how to process all European cities::
+
+    from ijson import items
+
+    f = urlopen('http://.../')
+    objects = items(f, 'earth.europe.item')
+    cities = (o for o in objects if o['type'] == 'city')
+    for city in cities:
+        do_something_with(city)
+
+Sometimes when dealing with a particularly large JSON payload it may worth to
+not even construct individual Python objects and react on individual events
+immediately producing some result::
 
     from ijson import parse
 
-    f = urlopen('http://.../') # some huge JSON
+    f = urlopen('http://.../')
     parser = parse(f)
-    while True:
-        prefix, event, value = parser.next()
-        if prefix == 'earth.europe' and event == 'start_array':
-            while prefix.startswith('earth.europe'):
-                prefix, event, value = parser.next()
-                if event == 'map_key':
-                    key = value
-                    prefix, event, value = parser.next()
-                    do_something_with(key, value)
+    stream.write('<geo>')
+    for prefix, event, value in parser:
+        if (prefix, event) == ('earth', 'map_key'):
+            stream.write('<%s>' % value)
+            continent = value
+        elif prefix.endswith('.name'):
+            stream.write('<object name="%s"/>' % value)
+        elif (prefix, event) == ('earth.%s' % continent, 'end_map'):
+            stream.write('</%s>' % continent)
+    stream.write('</geo>')
+
 
 Acknowledgements
 ================
