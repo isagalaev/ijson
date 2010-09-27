@@ -104,6 +104,8 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
                 result = yajl.yajl_parse(handle, buffer, len(buffer))
             else:
                 result = yajl.yajl_parse_complete(handle)
+                if result == YAJL_INSUFFICIENT_DATA:
+                    raise JSONError("empty JSON description")
             if result == YAJL_ERROR:
                 error = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
                 raise JSONError(error)
@@ -111,6 +113,8 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
                 for event in events:
                     yield event
                 events = []
+            if result == YAJL_CANCELLED:
+                break
             buffer = f.read(buf_size)
     finally:
         yajl.yajl_free(handle)
