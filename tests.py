@@ -31,13 +31,9 @@ JSON = '''
 }
 '''
 
-SCALAR_JSON = '''
-"value"
-'''
+SCALAR_JSON = '''"value"'''
 
-INVALID_JSON = '''
-  {"key": "value",}
-'''
+INVALID_JSON = '''{"key": "value",}'''
 
 class Parse(unittest.TestCase):
     def test_basic_parse(self):
