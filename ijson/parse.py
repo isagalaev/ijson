@@ -101,7 +101,7 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
                 result = yajl.yajl_parse(handle, buffer, len(buffer))
             else:
                 result = yajl.yajl_parse_complete(handle)
-            if not buffer or (result in (YAJL_CANCELLED, YAJL_ERROR)):
+            if not buffer or result == YAJL_ERROR:
                 break
             for event, value in events:
                 yield event, value
