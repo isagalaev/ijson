@@ -97,6 +97,8 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
     try:
         result = None
         buffer = f.read(buf_size)
+        if not buffer:
+            raise JSONError("empty JSON description")
         while buffer or result == YAJL_INSUFFICIENT_DATA:
             if buffer:
                 result = yajl.yajl_parse(handle, buffer, len(buffer))
