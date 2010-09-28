@@ -94,7 +94,7 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
             return 1
         return func_type(c_callback)
 
-    yajl.yajl_get_error.restype = c_char_p
+    yajl.yajl_get_error.restype = c_void_p
     callbacks = Callbacks(*[callback(*data) for data in _callback_data])
     config = Config(allow_comments, check_utf8)
     handle = yajl.yajl_alloc(byref(callbacks), byref(config), None, None)
@@ -106,7 +106,9 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
             else:
                 result = yajl.yajl_parse_complete(handle)
             if result == YAJL_ERROR:
-                error = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
+                perror = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
+                error = c_char_p(perror).value
+                yajl.yajl_free_error(handle, perror)
                 raise JSONError(error)
             if not buffer and not events:
                 if result == YAJL_INSUFFICIENT_DATA:
