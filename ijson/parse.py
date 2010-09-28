@@ -95,21 +95,27 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
     config = Config(allow_comments, check_utf8)
     handle = yajl.yajl_alloc(byref(callbacks), byref(config), None, None)
     try:
-        while True:
-            buffer = f.read(buf_size)
+        result = None
+        buffer = f.read(buf_size)
+        if not buffer:
+            raise JSONError("empty JSON description")
+        while buffer or result == YAJL_INSUFFICIENT_DATA:
             if buffer:
                 result = yajl.yajl_parse(handle, buffer, len(buffer))
             else:
                 result = yajl.yajl_parse_complete(handle)
-            if not buffer or result == YAJL_ERROR:
+                if result == YAJL_INSUFFICIENT_DATA:
+                    raise JSONError("empty JSON description")
+            if result == YAJL_ERROR:
+                error = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
+                raise JSONError(error)
+            if events:
+                for event in events:
+                    yield event
+                events = []
+            if result == YAJL_CANCELLED:
                 break
-            for event in events:
-                yield event
-            events = []
-
-        if result == YAJL_ERROR:
-            error = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
-            raise JSONError(error)
+            buffer = f.read(buf_size)
     finally:
         yajl.yajl_free(handle)
 
