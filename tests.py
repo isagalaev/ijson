@@ -3,7 +3,7 @@ import unittest
 from cStringIO import StringIO
 from decimal import Decimal
 
-from ijson import parse, basic_parse, JSONError, ObjectBuilder, items
+from ijson import parse, basic_parse, JSONError, IncompleteJSONError, ObjectBuilder, items
 
 
 JSON = '''
@@ -30,10 +30,10 @@ JSON = '''
   ]
 }
 '''
-
-SCALAR_JSON = '''"value"'''
-
-INVALID_JSON = '''{"key": "value",}'''
+SCALAR_JSON = '0'
+EMPTY_JSON = ''
+INVALID_JSON = '{"key": "value",}'
+INCOMPLETE_JSON = '"test'
 
 class Parse(unittest.TestCase):
     def test_basic_parse(self):
@@ -96,7 +96,19 @@ class Parse(unittest.TestCase):
 
     def test_scalar(self):
         events = list(parse(StringIO(SCALAR_JSON)))
-        self.assertEqual(events, [('', 'string', u'value')])
+        self.assertEqual(events, [('', 'number', 0)])
+
+    def test_empty(self):
+        self.assertRaises(
+            IncompleteJSONError,
+            lambda: list(parse(StringIO(EMPTY_JSON))),
+        )
+
+    def test_incomplete(self):
+        self.assertRaises(
+            IncompleteJSONError,
+            lambda: list(parse(StringIO(INCOMPLETE_JSON))),
+        )
 
     def test_invalid(self):
         self.assertRaises(
@@ -141,7 +153,7 @@ class Builder(unittest.TestCase):
         builder = ObjectBuilder()
         for event, value in basic_parse(StringIO(SCALAR_JSON)):
             builder.event(event, value)
-        self.assertEqual(builder.value, u'value')
+        self.assertEqual(builder.value, 0)
 
     def test_items(self):
         meta = list(items(StringIO(JSON), 'docs.item.meta'))

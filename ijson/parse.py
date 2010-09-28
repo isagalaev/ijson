@@ -56,6 +56,10 @@ YAJL_ERROR = 3
 class JSONError(Exception):
     pass
 
+class IncompleteJSONError(JSONError):
+    def __init__(self):
+        super(IncompleteJSONError, self).__init__('Incomplete or empty JSON data')
+
 def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
     '''
     An iterator returning events from a JSON being parsed. This basic parser
@@ -95,27 +99,23 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
     config = Config(allow_comments, check_utf8)
     handle = yajl.yajl_alloc(byref(callbacks), byref(config), None, None)
     try:
-        result = None
-        buffer = f.read(buf_size)
-        if not buffer:
-            raise JSONError("empty JSON description")
-        while buffer or result == YAJL_INSUFFICIENT_DATA:
+        while True:
+            buffer = f.read(buf_size)
             if buffer:
                 result = yajl.yajl_parse(handle, buffer, len(buffer))
             else:
                 result = yajl.yajl_parse_complete(handle)
-                if result == YAJL_INSUFFICIENT_DATA:
-                    raise JSONError("empty JSON description")
             if result == YAJL_ERROR:
                 error = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
                 raise JSONError(error)
-            if events:
-                for event in events:
-                    yield event
-                events = []
-            if result == YAJL_CANCELLED:
+            if not buffer and not events:
+                if result == YAJL_INSUFFICIENT_DATA:
+                    raise IncompleteJSONError()
                 break
-            buffer = f.read(buf_size)
+
+            for event in events:
+                yield event
+            events = []
     finally:
         yajl.yajl_free(handle)
 
