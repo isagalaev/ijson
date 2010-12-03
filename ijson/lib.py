@@ -4,10 +4,11 @@ name = util.find_library('yajl')
 
 # Temporary hack for Hardy 64. find_library doesn't find this file for some
 # reason.
-import os
-hardy64_name = '/usr/lib/libyajl.so.1'
-if os.path.exists(hardy64_name):
-    name = hardy64_name
+if name is None:
+    import os
+    hardy64_name = '/usr/lib/libyajl.so.1'
+    os.path.exists(hardy64_name):
+        name = hardy64_name
 
 if name is None:
     raise Exception('YAJL shared object not found.')
