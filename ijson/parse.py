@@ -1,5 +1,5 @@
 from ctypes import Structure, c_uint, c_ubyte, c_int, c_long, c_double, \
-                   c_void_p, c_char_p, CFUNCTYPE, POINTER, byref, string_at
+                   c_void_p, c_char_p, CFUNCTYPE, POINTER, byref, string_at, cast
 from decimal import Decimal
 
 from ijson.lib import yajl
@@ -94,7 +94,6 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
             return 1
         return func_type(c_callback)
 
-    yajl.yajl_get_error.restype = c_void_p
     callbacks = Callbacks(*[callback(*data) for data in _callback_data])
     config = Config(allow_comments, check_utf8)
     handle = yajl.yajl_alloc(byref(callbacks), byref(config), None, None)
@@ -107,7 +106,7 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
                 result = yajl.yajl_parse_complete(handle)
             if result == YAJL_ERROR:
                 perror = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
-                error = c_char_p(perror).value
+                error = cast(perror, c_char_p).value
                 yajl.yajl_free_error(handle, perror)
                 raise JSONError(error)
             if not buffer and not events:
