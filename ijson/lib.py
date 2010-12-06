@@ -7,7 +7,7 @@ name = util.find_library('yajl')
 if name is None:
     import os
     hardy64_name = '/usr/lib/libyajl.so.1'
-    os.path.exists(hardy64_name):
+    if os.path.exists(hardy64_name):
         name = hardy64_name
 
 if name is None:
@@ -17,3 +17,4 @@ yajl = cdll.LoadLibrary(name)
 yajl.yajl_alloc.restype = POINTER(c_char)
 yajl.yajl_gen_alloc.restype = POINTER(c_char)
 yajl.yajl_gen_alloc2.restype = POINTER(c_char)
+yajl.yajl_get_error.restype = POINTER(c_char)
