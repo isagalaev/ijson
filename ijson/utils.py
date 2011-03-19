@@ -30,9 +30,10 @@ def foreach(coroutine_func):
     if event != 'start_array':
         raise Exception('foreach requires "start_array" as the first event, got %s' % repr((base, event, value)))
     START_EVENTS = set(['start_map', 'start_array', 'null', 'boolean', 'number', 'string'])
+    itemprefix = base + '.item' if base else 'item'
     while True:
         prefix, event, value = yield
-        if prefix == base + '.item' and event in START_EVENTS:
+        if prefix == itemprefix and event in START_EVENTS:
             g = coroutine_func()
         if (prefix, event) != (base, 'end_array'):
             g.send((prefix, event, value))
