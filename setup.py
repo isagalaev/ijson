@@ -10,5 +10,5 @@ setup(
     url = 'https://launchpad.net/ijson',
     license = 'LICENSE.txt',
     description = 'A Python wrapper to YAJL providing standard iterator interface to streaming JSON parsing',
-    long_description = open('README.txt').read(),
+    long_description = open('README.rst').read(),
 )
