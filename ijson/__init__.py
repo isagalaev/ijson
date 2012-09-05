@@ -1,3 +1,2 @@
-from ijson.parse import JSONError, IncompleteJSONError, \
-                        basic_parse, parse, \
-                        ObjectBuilder, items
+from ijson.common import JSONError, IncompleteJSONError, ObjectBuilder
+from ijson.backends.yajl import  basic_parse, parse, items
