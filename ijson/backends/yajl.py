@@ -136,8 +136,8 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
     finally:
         yajl.yajl_free(handle)
 
-def parse(*args, **kwargs):
-    return common.parse(basic_parse(*args, **kwargs))
+def parse(file, **kwargs):
+    return common.parse(basic_parse(file, **kwargs))
 
 def items(file, prefix):
     return common.items(basic_parse(file), prefix)
