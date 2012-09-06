@@ -6,7 +6,6 @@ from ijson import common
 
 BUFSIZE = 4 * 1024
 NONWS = re.compile(r'\S')
-STRTERM = re.compile(r'"|\\.')
 NUMTERM = re.compile(r'[^0-9\.-]')
 ALPHATERM = re.compile(r'[^a-z]')
 
@@ -58,26 +57,24 @@ class Reader(object):
         return ''.join(result)
 
     def stringlexem(self):
-        result = []
+        start = self.pos
         while True:
-            match = STRTERM.search(self.buffer, self.pos)
-            if match:
-                pos = match.start()
-                if self.buffer[pos] == '\\':
-                    result.append(self.buffer[self.pos:pos + 2])
-                    self.pos = pos + 2
+            try:
+                end = self.buffer.index('"', start)
+                escpos = end - 1
+                while self.buffer[escpos] == '\\':
+                    escpos -= 1
+                if (end - escpos) % 2 == 0:
+                    start = end + 1
                 else:
-                    pos += 1 # ending quote
-                    result.append(self.buffer[self.pos:pos])
-                    self.pos = pos
-                    break
-            else:
-                result.append(self.buffer[self.pos:])
-                self.buffer = self.f.read(BUFSIZE)
-                self.pos = 0
-                if not self.buffer:
+                    result = self.buffer[self.pos:end + 1]
+                    self.pos = end + 1
+                    return result
+            except ValueError:
+                old_len = len(self.buffer)
+                self.buffer += self.f.read(BUFSIZE)
+                if len(self.buffer) == old_len:
                     raise common.IncompleteJSONError()
-        return ''.join(result)
 
 def parse_value(f, symbol=None):
     if symbol == None:
