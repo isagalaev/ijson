@@ -92,7 +92,7 @@ def parse_value(f, symbol=None):
         for event in parse_object(f):
             yield event
     elif symbol[0] == '"':
-        yield ('string', symbol.strip('"').decode('unicode-escape'))
+        yield ('string', symbol[1:-1].decode('unicode-escape'))
     else:
         try:
             number = Decimal(symbol) if '.' in symbol else int(symbol)
@@ -122,7 +122,7 @@ def parse_object(f):
         symbol = f.next()
         if symbol[0] != '"':
             raise common.JSONError('Unexpected symbol')
-        yield ('map_key', symbol.strip('"'))
+        yield ('map_key', symbol[1:-1])
         symbol = f.next()
         if symbol != ':':
             raise common.JSONError('Unexpected symbol')
