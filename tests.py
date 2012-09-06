@@ -34,7 +34,7 @@ JSON = r'''
 SCALAR_JSON = '0'
 EMPTY_JSON = ''
 INVALID_JSON = '{"key": "value",}'
-INCOMPLETE_JSON = '"test\\'
+INCOMPLETE_JSON = '"test'
 STRINGS_JSON = r'''
 {
     "str1": "",
