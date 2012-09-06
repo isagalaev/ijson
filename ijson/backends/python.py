@@ -54,8 +54,10 @@ class Reader(object):
                     result.append(self.buffer[self.pos:pos + 2])
                     self.pos = pos + 2
                 else:
+                    if eatterm:
+                        pos += len(terminator)
                     result.append(self.buffer[self.pos:pos])
-                    self.pos = pos + len(terminator) if eatterm else pos
+                    self.pos = pos
                     return ''.join(result)
             else:
                 result.append(self.buffer[self.pos:])
