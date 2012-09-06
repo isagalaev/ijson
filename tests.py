@@ -7,7 +7,7 @@ import threading
 from ijson import parse, basic_parse, JSONError, IncompleteJSONError, ObjectBuilder, items
 
 
-JSON = '''
+JSON = r'''
 {
   "docs": [
     {
@@ -34,7 +34,15 @@ JSON = '''
 SCALAR_JSON = '0'
 EMPTY_JSON = ''
 INVALID_JSON = '{"key": "value",}'
-INCOMPLETE_JSON = '"test'
+INCOMPLETE_JSON = '"test\\'
+STRINGS_JSON = r'''
+{
+    "str1": "",
+    "str2": "\"",
+    "str3": "\\",
+    "str4": "\\\\"
+}
+'''
 
 class Parse(unittest.TestCase):
     def test_basic_parse(self):
@@ -99,6 +107,11 @@ class Parse(unittest.TestCase):
         events = list(parse(StringIO(SCALAR_JSON)))
         self.assertEqual(events, [('', 'number', 0)])
 
+    def test_strings(self):
+        events = list(parse(StringIO(STRINGS_JSON)))
+        strings = [value for prefix, event, value in events if event == 'string']
+        self.assertEqual(strings, ['', '"', '\\', '\\\\'])
+
     def test_empty(self):
         self.assertRaises(
             IncompleteJSONError,
@@ -121,6 +134,7 @@ class Parse(unittest.TestCase):
         # shouldn't fail since iterator is not exhausted
         parse(StringIO(INVALID_JSON))
         self.assertTrue(True)
+
 
 class Builder(unittest.TestCase):
     def test_object_builder(self):
@@ -163,12 +177,12 @@ class Builder(unittest.TestCase):
             {'key': 'value'},
             None,
         ])
-        
+
 class FuncThread(threading.Thread):
     def __init__(self, func):
         super(FuncThread, self).__init__()
         self.func = func
-        
+
     def run(self):
         self.func()
 
