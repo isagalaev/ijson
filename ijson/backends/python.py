@@ -7,7 +7,8 @@ from ijson import common
 BUFSIZE = 4 * 1024
 NONWS = re.compile(r'\S')
 STRTERM = re.compile(r'["\\]')
-NUMTERM = re.compile(r'[^0-9\.]')
+NUMTERM = re.compile(r'[^0-9\.-]')
+ALPHATERM = re.compile(r'[^a-z]')
 
 
 class Reader(object):
@@ -16,29 +17,19 @@ class Reader(object):
         self.buffer = ''
         self.pos = 0
 
-    def read(self, count):
-        if count <= len(self.buffer) - self.pos:
-            start = self.pos
-            self.pos += count
-            return self.buffer[start:self.pos]
-        else:
-            over = count - (len(self.buffer) - self.pos)
-            self.newbuffer = self.f.read(BUFSIZE)
-            result = self.buffer[self.pos:] + self.newbuffer[:over]
-            self.buffer = self.newbuffer
-            self.pos = over
-            return result
-
-    def retract(self):
-        self.pos -= 1
-        assert self.pos >= 0
-
-    def nextchar(self):
+    def nextsymbol(self):
         while True:
             match = NONWS.search(self.buffer, self.pos)
             if match:
-                self.pos = match.start() + 1
-                return self.buffer[match.start()]
+                self.pos = match.start()
+                char = self.buffer[self.pos]
+                if 'a' <= char <= 'z':
+                    return self.readuntil(ALPHATERM)
+                elif '0' <= char <= '9' or char == '-':
+                    return self.readuntil(NUMTERM)
+                else:
+                    self.pos += 1
+                    return char
             self.buffer = self.f.read(BUFSIZE)
             self.pos = 0
             if not len(self.buffer):
@@ -70,37 +61,29 @@ class Reader(object):
                     else:
                         return ''.join(result)
 
-def parse_value(f):
-    char = f.nextchar()
-    if char == 'n':
-        if f.read(3) != 'ull':
-            raise common.JSONError('Unexpected symbol')
+def parse_value(f, symbol=None):
+    if symbol == None:
+        symbol = f.nextsymbol()
+    if symbol == 'null':
         yield ('null', None)
-    elif char == 't':
-        if f.read(3) != 'rue':
-            raise common.JSONError('Unexpected symbol')
+    elif symbol == 'true':
         yield ('boolean', True)
-    elif char == 'f':
-        if f.read(4) != 'alse':
-            raise common.JSONError('Unexpected symbol')
+    elif symbol == 'false':
         yield ('boolean', False)
-    elif char == '-' or ('0' <= char <= '9'):
-        number = char + f.readuntil(NUMTERM)
-        try:
-            number = Decimal(number) if '.' in number else int(number)
-        except ValueError:
-            raise common.JSONError('Unexpected symbol')
-        yield ('number', number)
-    elif char == '"':
+    elif symbol == '"':
         yield ('string', parse_string(f))
-    elif char == '[':
+    elif symbol == '[':
         for event in parse_array(f):
             yield event
-    elif char == '{':
+    elif symbol == '{':
         for event in parse_object(f):
             yield event
     else:
-        raise common.JSONError('Unexpected symbol')
+        try:
+            number = Decimal(symbol) if '.' in symbol else int(symbol)
+            yield ('number', number)
+        except ValueError:
+            raise common.JSONError('Unexpected symbol')
 
 def parse_string(f):
     result = f.readuntil(STRTERM, '\\', eatterm=True)
@@ -108,35 +91,36 @@ def parse_string(f):
 
 def parse_array(f):
     yield ('start_array', None)
-    char = f.nextchar()
-    if char != ']':
-        f.retract()
-        while True:
-            for event in parse_value(f):
-                yield event
-            char = f.nextchar()
-            if char == ']':
-                break
-            if char != ',':
+    expect_comma = False
+    while True:
+        symbol = f.nextsymbol()
+        if symbol == ']':
+            break
+        if expect_comma:
+            if symbol != ',':
                 raise common.JSONError('Unexpected symbol')
+        else:
+            for event in parse_value(f, symbol):
+                yield event
+        expect_comma = not expect_comma
     yield ('end_array', None)
 
 def parse_object(f):
     yield ('start_map', None)
     while True:
-        char = f.nextchar()
-        if char != '"':
+        symbol = f.nextsymbol()
+        if symbol != '"':
             raise common.JSONError('Unexpected symbol')
         yield ('map_key', parse_string(f))
-        char = f.nextchar()
-        if char != ':':
+        symbol = f.nextsymbol()
+        if symbol != ':':
             raise common.JSONError('Unexpected symbol')
         for event in parse_value(f):
             yield event
-        char = f.nextchar()
-        if char == '}':
+        symbol = f.nextsymbol()
+        if symbol == '}':
             break
-        if char != ',':
+        if symbol != ',':
             raise common.JSONError('Unexpected symbol')
     yield ('end_map', None)
 
@@ -145,7 +129,7 @@ def basic_parse(f):
     for value in parse_value(f):
         yield value
     try:
-        f.nextchar()
+        f.nextsymbol()
     except common.IncompleteJSONError:
         pass
     else:
