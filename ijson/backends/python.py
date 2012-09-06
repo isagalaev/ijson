@@ -14,10 +14,13 @@ ALPHATERM = re.compile(r'[^a-z]')
 class Reader(object):
     def __init__(self, f):
         self.f = f
+
+    def __iter__(self):
         self.buffer = ''
         self.pos = 0
+        return self
 
-    def nextsymbol(self):
+    def next(self):
         while True:
             match = NONWS.search(self.buffer, self.pos)
             if match:
@@ -66,7 +69,7 @@ class Reader(object):
 
 def parse_value(f, symbol=None):
     if symbol == None:
-        symbol = f.nextsymbol()
+        symbol = f.next()
     if symbol == 'null':
         yield ('null', None)
     elif symbol == 'true':
@@ -92,7 +95,7 @@ def parse_array(f):
     yield ('start_array', None)
     expect_comma = False
     while True:
-        symbol = f.nextsymbol()
+        symbol = f.next()
         if symbol == ']':
             break
         if expect_comma:
@@ -107,16 +110,16 @@ def parse_array(f):
 def parse_object(f):
     yield ('start_map', None)
     while True:
-        symbol = f.nextsymbol()
+        symbol = f.next()
         if symbol[0] != '"':
             raise common.JSONError('Unexpected symbol')
         yield ('map_key', symbol.strip('"'))
-        symbol = f.nextsymbol()
+        symbol = f.next()
         if symbol != ':':
             raise common.JSONError('Unexpected symbol')
         for event in parse_value(f):
             yield event
-        symbol = f.nextsymbol()
+        symbol = f.next()
         if symbol == '}':
             break
         if symbol != ',':
@@ -124,11 +127,11 @@ def parse_object(f):
     yield ('end_map', None)
 
 def basic_parse(f):
-    f = Reader(f)
+    f = iter(Reader(f))
     for value in parse_value(f):
         yield value
     try:
-        f.nextsymbol()
+        f.next()
     except common.IncompleteJSONError:
         pass
     else:
