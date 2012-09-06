@@ -6,7 +6,7 @@ from ijson import common
 
 BUFSIZE = 4 * 1024
 NONWS = re.compile(r'\S')
-STRTERM = re.compile(r'["\\]')
+STRTERM = re.compile(r'"|\\.')
 NUMTERM = re.compile(r'[^0-9\.-]')
 ALPHATERM = re.compile(r'[^a-z]')
 
@@ -64,8 +64,6 @@ class Reader(object):
             if match:
                 pos = match.start()
                 if self.buffer[pos] == '\\':
-                    if len(self.buffer) < pos + 2:
-                        raise common.IncompleteJSONError()
                     result.append(self.buffer[self.pos:pos + 2])
                     self.pos = pos + 2
                 else:
