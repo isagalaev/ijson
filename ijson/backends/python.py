@@ -27,6 +27,9 @@ class Reader(object):
                     return self.readuntil(ALPHATERM)
                 elif '0' <= char <= '9' or char == '-':
                     return self.readuntil(NUMTERM)
+                elif char == '"':
+                    self.pos += 1
+                    return '"' + self.readuntil(STRTERM, '\\', True)
                 else:
                     self.pos += 1
                     return char
@@ -70,24 +73,20 @@ def parse_value(f, symbol=None):
         yield ('boolean', True)
     elif symbol == 'false':
         yield ('boolean', False)
-    elif symbol == '"':
-        yield ('string', parse_string(f))
     elif symbol == '[':
         for event in parse_array(f):
             yield event
     elif symbol == '{':
         for event in parse_object(f):
             yield event
+    elif symbol[0] == '"':
+        yield ('string', symbol.strip('"').decode('unicode-escape'))
     else:
         try:
             number = Decimal(symbol) if '.' in symbol else int(symbol)
             yield ('number', number)
         except ValueError:
             raise common.JSONError('Unexpected symbol')
-
-def parse_string(f):
-    result = f.readuntil(STRTERM, '\\', eatterm=True)
-    return result.decode('unicode-escape')
 
 def parse_array(f):
     yield ('start_array', None)
@@ -109,9 +108,9 @@ def parse_object(f):
     yield ('start_map', None)
     while True:
         symbol = f.nextsymbol()
-        if symbol != '"':
+        if symbol[0] != '"':
             raise common.JSONError('Unexpected symbol')
-        yield ('map_key', parse_string(f))
+        yield ('map_key', symbol.strip('"'))
         symbol = f.nextsymbol()
         if symbol != ':':
             raise common.JSONError('Unexpected symbol')
