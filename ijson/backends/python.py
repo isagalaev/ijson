@@ -27,12 +27,12 @@ class Reader(object):
                 self.pos = match.start()
                 char = self.buffer[self.pos]
                 if 'a' <= char <= 'z':
-                    return self.readuntil(ALPHATERM)
+                    return self.lexem(ALPHATERM)
                 elif '0' <= char <= '9' or char == '-':
-                    return self.readuntil(NUMTERM)
+                    return self.lexem(NUMTERM)
                 elif char == '"':
                     self.pos += 1
-                    return '"' + self.readuntil(STRTERM, '\\', True)
+                    return '"' + self.stringlexem()
                 else:
                     self.pos += 1
                     return char
@@ -41,33 +41,45 @@ class Reader(object):
             if not len(self.buffer):
                 raise common.IncompleteJSONError()
 
-    def readuntil(self, pattern, escape=None, eatterm=False):
+    def lexem(self, pattern):
         result = []
         while True:
             match = pattern.search(self.buffer, self.pos)
             if match:
                 pos = match.start()
-                terminator = self.buffer[pos:pos + 1]
-                if terminator == escape:
+                result.append(self.buffer[self.pos:pos])
+                self.pos = pos
+                break
+            result.append(self.buffer[self.pos:])
+            self.buffer = self.f.read(BUFSIZE)
+            self.pos = 0
+            if not self.buffer:
+                break
+        return ''.join(result)
+
+    def stringlexem(self):
+        result = []
+        while True:
+            match = STRTERM.search(self.buffer, self.pos)
+            if match:
+                pos = match.start()
+                if self.buffer[pos] == '\\':
                     if len(self.buffer) < pos + 2:
                         raise common.IncompleteJSONError()
                     result.append(self.buffer[self.pos:pos + 2])
                     self.pos = pos + 2
                 else:
-                    if eatterm:
-                        pos += len(terminator)
+                    pos += 1 # ending quote
                     result.append(self.buffer[self.pos:pos])
                     self.pos = pos
-                    return ''.join(result)
+                    break
             else:
                 result.append(self.buffer[self.pos:])
                 self.buffer = self.f.read(BUFSIZE)
                 self.pos = 0
                 if not self.buffer:
-                    if eatterm:
-                        raise common.IncompleteJSONError()
-                    else:
-                        return ''.join(result)
+                    raise common.IncompleteJSONError()
+        return ''.join(result)
 
 def parse_value(f, symbol=None):
     if symbol == None:
