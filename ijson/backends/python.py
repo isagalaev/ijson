@@ -27,8 +27,7 @@ class Reader(object):
                 if 'a' <= char <= 'z' or '0' <= char <= '9' or char == '-':
                     return self.lexem(LEXTERM)
                 elif char == '"':
-                    self.pos += 1
-                    return '"' + self.stringlexem()
+                    return self.stringlexem()
                 else:
                     self.pos += 1
                     return char
@@ -57,7 +56,7 @@ class Reader(object):
         return result
 
     def stringlexem(self):
-        start = self.pos
+        start = self.pos + 1
         while True:
             try:
                 end = self.buffer.index('"', start)
