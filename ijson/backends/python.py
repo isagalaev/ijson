@@ -9,6 +9,10 @@ NONWS = re.compile(r'\S')
 LEXTERM = re.compile(r'[^a-z0-9\.-]')
 
 
+class UnexpectedSymbol(common.JSONError):
+    def __init__(self, symbol, reader):
+        super(UnexpectedSymbol, self).__init__('Unexpected symbol "%s" at %d' % (symbol[0], reader.pos - len(symbol)))
+
 class Reader(object):
     def __init__(self, f):
         self.f = f
@@ -97,7 +101,7 @@ def parse_value(f, symbol=None):
             number = Decimal(symbol) if '.' in symbol else int(symbol)
             yield ('number', number)
         except ValueError:
-            raise common.JSONError('Unexpected symbol')
+            raise UnexpectedSymbol(symbol, f)
 
 def parse_array(f):
     yield ('start_array', None)
@@ -110,7 +114,7 @@ def parse_array(f):
             if symbol == ']':
                 break
             if symbol != ',':
-                raise common.JSONError('Unexpected symbol')
+                raise UnexpectedSymbol(symbol, f)
             symbol = f.next()
     yield ('end_array', None)
 
@@ -120,18 +124,18 @@ def parse_object(f):
     if symbol != '}':
         while True:
             if symbol[0] != '"':
-                raise common.JSONError('Unexpected symbol')
+                raise UnexpectedSymbol(symbol, f)
             yield ('map_key', symbol[1:-1])
             symbol = f.next()
             if symbol != ':':
-                raise common.JSONError('Unexpected symbol')
+                raise UnexpectedSymbol(symbol, f)
             for event in parse_value(f):
                 yield event
             symbol = f.next()
             if symbol == '}':
                 break
             if symbol != ',':
-                raise common.JSONError('Unexpected symbol')
+                raise UnexpectedSymbol(symbol, f)
             symbol = f.next()
     yield ('end_map', None)
 
