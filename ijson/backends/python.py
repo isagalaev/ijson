@@ -4,7 +4,7 @@ import re
 from ijson import common
 
 
-BUFSIZE = 4 * 1024
+BUFSIZE = 16 * 1024
 NONWS = re.compile(r'\S')
 NUMTERM = re.compile(r'[^0-9\.-]')
 ALPHATERM = re.compile(r'[^a-z]')
