@@ -41,20 +41,23 @@ class Reader(object):
                 raise common.IncompleteJSONError()
 
     def lexem(self, pattern):
-        result = []
+        current = self.pos
         while True:
-            match = pattern.search(self.buffer, self.pos)
+            match = pattern.search(self.buffer, current)
             if match:
-                pos = match.start()
-                result.append(self.buffer[self.pos:pos])
-                self.pos = pos
+                current = match.start()
                 break
-            result.append(self.buffer[self.pos:])
-            self.buffer = self.f.read(BUFSIZE)
+            else:
+                current = len(self.buffer)
+                self.buffer += self.f.read(BUFSIZE)
+                if len(self.buffer) == current:
+                    break
+        result = self.buffer[self.pos:current]
+        self.pos = current
+        if self.pos > BUFSIZE:
+            self.buffer = self.buffer[self.pos:]
             self.pos = 0
-            if not self.buffer:
-                break
-        return ''.join(result)
+        return result
 
     def stringlexem(self):
         start = self.pos
