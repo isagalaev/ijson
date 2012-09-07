@@ -2,9 +2,8 @@
 ijson
 =====
 
-Ijson is a Python wrapper to `YAJL <http://lloyd.github.com/yajl/>`_ which is a
-streaming SAX-like JSON parser. Ijson provides a standard Python iterator
-interface for it.
+Ijson is an iterative JSON parser with a standard Python iterator interface
+for it.
 
 
 Usage
@@ -56,6 +55,28 @@ immediately producing some result::
         elif (prefix, event) == ('earth.%s' % continent, 'end_map'):
             stream.write('</%s>' % continent)
     stream.write('</geo>')
+
+
+Backends
+========
+
+Ijson provides several implementations of the actual parsing in the form of
+backends located in ijson/backends/*:
+
+- ``yajl``: wrapper around `YAJL <http://lloyd.github.com/yajl/>`_ C library
+  (version 1.x)
+- ``python``: pure Python parser (good to use under PyPy)
+
+You can import a specific backend and use it in the same way as the top level
+library::
+
+    import ijson.backends.python as ijson
+
+    for item in ijson.items(...):
+        # ...
+
+Importing the top level library defaults to the ``yajl`` backend.
+
 
 
 Acknowledgements
