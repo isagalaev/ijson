@@ -5,12 +5,11 @@ class IncompleteJSONError(JSONError):
     def __init__(self):
         super(IncompleteJSONError, self).__init__('Incomplete or empty JSON data')
 
-def parse(events):
+def parse(basic_events):
     '''
-    An iterator returning events from a JSON being parsed. This iterator
-    provides the context of parser events accompanying them with a "prefix"
-    value that contains the path to the nested elements from the root of the
-    JSON document.
+    An iterator returning prefixed events from the basic events as returned from
+    a backend's `basic_parse`. Prefixes represent the path to the nested elements
+    from the root of the JSON document.
 
     For example, given this document:
 
@@ -46,7 +45,7 @@ def parse(events):
     - buf_size: a size of an input buffer
     '''
     path = []
-    for event, value in events:
+    for event, value in basic_events:
         if event == 'map_key':
             prefix = '.'.join(path[:-1])
             path[-1] = value
@@ -111,22 +110,22 @@ class ObjectBuilder(object):
         else:
             self.containers[-1](value)
 
-def items(events, prefix):
+def items(prefixed_events, prefix):
     '''
-    Iterates over a file objects and everything found under given prefix as
-    as native Python objects.
+    An iterator returning native Python objects constructed from the events
+    under a given prefix. The `prefixed_events` is an iterator of events as
+    returned from `parse`.
     '''
-    parser = iter(parse(events))
     try:
         while True:
-            current, event, value = parser.next()
+            current, event, value = prefixed_events.next()
             if current == prefix:
                 builder = ObjectBuilder()
                 if event in ('start_map', 'start_array'):
                     end_event = event.replace('start', 'end')
                     while (current, event) != (prefix, end_event):
                         builder.event(event, value)
-                        current, event, value = parser.next()
+                        current, event, value = prefixed_events.next()
                 else:
                     builder.event(event, value)
                 yield builder.value

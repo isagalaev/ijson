@@ -140,4 +140,4 @@ def parse(file, **kwargs):
     return common.parse(basic_parse(file, **kwargs))
 
 def items(file, prefix):
-    return common.items(basic_parse(file), prefix)
+    return common.items(parse(file), prefix)

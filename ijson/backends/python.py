@@ -154,4 +154,4 @@ def parse(file):
     return common.parse(basic_parse(file))
 
 def items(file, prefix):
-    return common.items(basic_parse(file), prefix)
+    return common.items(parse(file), prefix)
