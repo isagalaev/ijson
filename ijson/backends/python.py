@@ -6,8 +6,7 @@ from ijson import common
 
 BUFSIZE = 16 * 1024
 NONWS = re.compile(r'\S')
-NUMTERM = re.compile(r'[^0-9\.-]')
-ALPHATERM = re.compile(r'[^a-z]')
+LEXTERM = re.compile(r'[^a-z0-9\.-]')
 
 
 class Reader(object):
@@ -25,10 +24,8 @@ class Reader(object):
             if match:
                 self.pos = match.start()
                 char = self.buffer[self.pos]
-                if 'a' <= char <= 'z':
-                    return self.lexem(ALPHATERM)
-                elif '0' <= char <= '9' or char == '-':
-                    return self.lexem(NUMTERM)
+                if 'a' <= char <= 'z' or '0' <= char <= '9' or char == '-':
+                    return self.lexem(LEXTERM)
                 elif char == '"':
                     self.pos += 1
                     return '"' + self.stringlexem()
