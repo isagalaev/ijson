@@ -61,7 +61,7 @@ Backends
 ========
 
 Ijson provides several implementations of the actual parsing in the form of
-backends located in ijson/backends/*:
+backends located in ijson/backends:
 
 - ``yajl``: wrapper around `YAJL <http://lloyd.github.com/yajl/>`_ C library
   (version 1.x)
