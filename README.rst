@@ -78,10 +78,17 @@ library::
 Importing the top level library defaults to the ``yajl`` backend.
 
 
-
 Acknowledgements
 ================
 
+Python parser in ijson is relatively simple thanks to `Douglas Crockford
+<http://www.crockford.com/>`_ who invented a strict, easy to parse syntax.
+
+The `YAJL <http://lloyd.github.com/yajl/>`_ library by `Lloyd Hilaiel
+<http://lloyd.io/>`_ is the most popular and efficient way to parse JSON in an
+iterative fashion.
+
 Ijson was inspired by `yajl-py <http://pykler.github.com/yajl-py/>`_ wrapper by
-Hatem Nassrat. Though ijson borrows almost nothing from the actual yajl-py code
-it was used as an example of integration with yajl using ctypes.
+`Hatem Nassrat <http://www.nassrat.ca/>`_. Though ijson borrows almost nothing
+from the actual yajl-py code it was used as an example of integration with yajl
+using ctypes.
