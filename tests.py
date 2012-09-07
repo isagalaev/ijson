@@ -20,7 +20,7 @@ JSON = r'''
       "decimal": 10000000000.5
     },
     {
-      "meta": [[1], [2]]
+      "meta": [[1], {}]
     },
     {
       "meta": {"key": "value"}
@@ -73,9 +73,8 @@ class Parse(unittest.TestCase):
                             ('start_array', None),
                                 ('number', 1),
                             ('end_array', None),
-                            ('start_array', None),
-                                ('number', 2),
-                            ('end_array', None),
+                            ('start_map', None),
+                            ('end_map', None),
                         ('end_array', None),
                     ('end_map', None),
                     ('start_map', None),
@@ -101,7 +100,7 @@ class Parse(unittest.TestCase):
             for prefix, event, value in events
             if prefix == 'docs.item.meta.item.item'
         ]
-        self.assertEqual(events, [1, 2])
+        self.assertEqual(events, [1])
 
     def test_scalar(self):
         events = list(parse(StringIO(SCALAR_JSON)))
@@ -153,7 +152,7 @@ class Builder(unittest.TestCase):
                    'decimal': Decimal('10000000000.5'),
                 },
                 {
-                    'meta': [[1], [2]],
+                    'meta': [[1], {}],
                 },
                 {
                     'meta': {'key': 'value'},
@@ -173,7 +172,7 @@ class Builder(unittest.TestCase):
     def test_items(self):
         meta = list(items(StringIO(JSON), 'docs.item.meta'))
         self.assertEqual(meta, [
-            [[1], [2]],
+            [[1], {}],
             {'key': 'value'},
             None,
         ])

@@ -101,37 +101,38 @@ def parse_value(f, symbol=None):
 
 def parse_array(f):
     yield ('start_array', None)
-    expect_comma = False
-    while True:
-        symbol = f.next()
-        if symbol == ']':
-            break
-        if expect_comma:
-            if symbol != ',':
-                raise common.JSONError('Unexpected symbol')
-        else:
+    symbol = f.next()
+    if symbol != ']':
+        while True:
             for event in parse_value(f, symbol):
                 yield event
-        expect_comma = not expect_comma
+            symbol = f.next()
+            if symbol == ']':
+                break
+            if symbol != ',':
+                raise common.JSONError('Unexpected symbol')
+            symbol = f.next()
     yield ('end_array', None)
 
 def parse_object(f):
     yield ('start_map', None)
-    while True:
-        symbol = f.next()
-        if symbol[0] != '"':
-            raise common.JSONError('Unexpected symbol')
-        yield ('map_key', symbol[1:-1])
-        symbol = f.next()
-        if symbol != ':':
-            raise common.JSONError('Unexpected symbol')
-        for event in parse_value(f):
-            yield event
-        symbol = f.next()
-        if symbol == '}':
-            break
-        if symbol != ',':
-            raise common.JSONError('Unexpected symbol')
+    symbol = f.next()
+    if symbol != '}':
+        while True:
+            if symbol[0] != '"':
+                raise common.JSONError('Unexpected symbol')
+            yield ('map_key', symbol[1:-1])
+            symbol = f.next()
+            if symbol != ':':
+                raise common.JSONError('Unexpected symbol')
+            for event in parse_value(f):
+                yield event
+            symbol = f.next()
+            if symbol == '}':
+                break
+            if symbol != ',':
+                raise common.JSONError('Unexpected symbol')
+            symbol = f.next()
     yield ('end_map', None)
 
 def basic_parse(f):
