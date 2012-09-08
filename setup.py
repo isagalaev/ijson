@@ -7,8 +7,8 @@ setup(
     author = 'Ivan Sagalaev',
     author_email = 'Maniac@SoftwareManiacs.Org',
     packages = ['ijson'],
-    url = 'https://launchpad.net/ijson',
+    url = 'https://github.com/isagalaev/ijson',
     license = 'LICENSE.txt',
-    description = 'A Python wrapper to YAJL providing standard iterator interface to streaming JSON parsing',
+    description = 'Iterative JSON parser with a standard Python iterator interface',
     long_description = open('README.rst').read(),
 )
