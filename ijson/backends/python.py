@@ -29,7 +29,7 @@ class Reader(object):
                 self.pos = match.start()
                 char = self.buffer[self.pos]
                 if 'a' <= char <= 'z' or '0' <= char <= '9' or char == '-':
-                    return self.lexem(LEXTERM)
+                    return self.lexem()
                 elif char == '"':
                     return self.stringlexem()
                 else:
@@ -40,10 +40,10 @@ class Reader(object):
             if not len(self.buffer):
                 raise common.IncompleteJSONError()
 
-    def lexem(self, pattern):
+    def lexem(self):
         current = self.pos
         while True:
-            match = pattern.search(self.buffer, current)
+            match = LEXTERM.search(self.buffer, current)
             if match:
                 current = match.start()
                 break
