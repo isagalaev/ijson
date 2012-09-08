@@ -116,6 +116,7 @@ def items(prefixed_events, prefix):
     under a given prefix. The `prefixed_events` is an iterator of events as
     returned from `parse`.
     '''
+    prefixed_events = iter(prefixed_events)
     try:
         while True:
             current, event, value = prefixed_events.next()
