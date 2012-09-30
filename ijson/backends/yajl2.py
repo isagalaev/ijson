@@ -62,19 +62,15 @@ _callback_data = [
 class Callbacks(Structure):
     _fields_ = [(name, type) for name, type, func in _callback_data]
 
-class Config(Structure):
-    _fields_ = [
-        ("allowComments", c_uint),
-        ("checkUTF8", c_uint)
-    ]
-
 YAJL_OK = 0
 YAJL_CANCELLED = 1
 YAJL_INSUFFICIENT_DATA = 2
 YAJL_ERROR = 3
 
+YAJL_ALLOW_COMMENTS = 1
 
-def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
+
+def basic_parse(f, allow_comments=False, buf_size=64 * 1024):
     '''
     An iterator returning events from a JSON being parsed. This basic parser
     doesn't maintain any context and just returns parser events from an
@@ -109,15 +105,16 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
         return func_type(c_callback)
 
     callbacks = Callbacks(*[callback(*data) for data in _callback_data])
-    config = Config(allow_comments, check_utf8)
-    handle = yajl.yajl_alloc(byref(callbacks), byref(config), None, None)
+    handle = yajl.yajl_alloc(byref(callbacks), None, None)
+    if allow_comments:
+        yajl.yajl_config(handle, YAJL_ALLOW_COMMENTS, 1)
     try:
         while True:
             buffer = f.read(buf_size)
             if buffer:
                 result = yajl.yajl_parse(handle, buffer, len(buffer))
             else:
-                result = yajl.yajl_parse_complete(handle)
+                result = yajl.yajl_complete_parse(handle)
             if result == YAJL_ERROR:
                 perror = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
                 error = cast(perror, c_char_p).value
