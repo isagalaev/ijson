@@ -1,12 +1,12 @@
 from ijson.common import JSONError, IncompleteJSONError, ObjectBuilder
-from ijson.backends import WrongVersion
+from ijson.backends import YAJLImportError
 
 try:
     import ijson.backends.yajl2 as backend
-except WrongVersion:
+except YAJLImportError:
     try:
         import ijson.backends.yajl as backend
-    except WrongVersion:
+    except YAJLImportError:
         import ijson.backends.python as backend
 
 
