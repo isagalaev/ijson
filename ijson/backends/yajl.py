@@ -7,15 +7,6 @@ from ijson import common
 
 
 so_name = util.find_library('yajl')
-
-# Temporary hack for Hardy 64. find_library doesn't find this file for some
-# reason.
-if so_name is None:
-    import os
-    hardy64_name = '/usr/lib/libyajl.so.1'
-    if os.path.exists(hardy64_name):
-        so_name = hardy64_name
-
 if so_name is None:
     raise Exception('YAJL shared object not found.')
 yajl = cdll.LoadLibrary(so_name)
