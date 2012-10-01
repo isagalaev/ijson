@@ -3,13 +3,10 @@ from ctypes import Structure, c_uint, c_ubyte, c_int, c_long, c_double, \
                    cdll, util, c_char
 from decimal import Decimal
 
-from ijson import common
+from ijson import common, backends
 
 
-so_name = util.find_library('yajl')
-if so_name is None:
-    raise Exception('YAJL shared object not found.')
-yajl = cdll.LoadLibrary(so_name)
+yajl = backends.find_yajl(1)
 
 yajl.yajl_alloc.restype = POINTER(c_char)
 yajl.yajl_get_error.restype = POINTER(c_char)
