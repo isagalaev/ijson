@@ -6,7 +6,7 @@ setup(
     version = '0.8.0',
     author = 'Ivan Sagalaev',
     author_email = 'Maniac@SoftwareManiacs.Org',
-    packages = ['ijson'],
+    packages = ['ijson', 'ijson.backends'],
     url = 'https://github.com/isagalaev/ijson',
     license = 'LICENSE.txt',
     description = 'Iterative JSON parser with a standard Python iterator interface',
