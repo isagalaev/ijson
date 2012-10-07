@@ -28,10 +28,10 @@ objects::
 Most common usage is having ijson yield native Python objects out of a JSON
 stream located under a prefix. Here's how to process all European cities::
 
-    from ijson import items
+    import ijson
 
     f = urlopen('http://.../')
-    objects = items(f, 'earth.europe.item')
+    objects = ijson.items(f, 'earth.europe.item')
     cities = (o for o in objects if o['type'] == 'city')
     for city in cities:
         do_something_with(city)
@@ -40,10 +40,9 @@ Sometimes when dealing with a particularly large JSON payload it may worth to
 not even construct individual Python objects and react on individual events
 immediately producing some result::
 
-    from ijson import parse
+    import ijson
 
-    f = urlopen('http://.../')
-    parser = parse(f)
+    parser = ijson.parse(urlopen('http://.../'))
     stream.write('<geo>')
     for prefix, event, value in parser:
         if (prefix, event) == ('earth', 'map_key'):
