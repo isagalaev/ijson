@@ -2,8 +2,7 @@
 ijson
 =====
 
-Ijson is an iterative JSON parser with a standard Python iterator interface
-for it.
+Ijson is an iterative JSON parser with a standard Python iterator interface.
 
 
 Usage
@@ -63,8 +62,8 @@ Backends
 Ijson provides several implementations of the actual parsing in the form of
 backends located in ijson/backends:
 
-- ``yajl``: wrapper around `YAJL <http://lloyd.github.com/yajl/>`_ C library
-  (version 1.x)
+- ``yajl2``: wrapper around `YAJL <http://lloyd.github.com/yajl/>`_ version 2.x
+- ``yajl``: wrapper around `YAJL <http://lloyd.github.com/yajl/>`_ version 1.x
 - ``python``: pure Python parser (good to use under PyPy)
 
 You can import a specific backend and use it in the same way as the top level
@@ -75,7 +74,9 @@ library::
     for item in ijson.items(...):
         # ...
 
-Importing the top level library defaults to the ``yajl`` backend.
+Importing the top level library as ``import ijson`` tries to import all backends
+in order, so it either finds an appropriate version of YAJL or falls back to the
+Python backend if none is found.
 
 
 Acknowledgements
