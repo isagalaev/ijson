@@ -99,6 +99,11 @@ class Parse(object):
         for e, r in zip(events, reference):
             self.assertEqual(e, r)
 
+    def test_basic_parse_threaded(self):
+        thread = threading.Thread(target=self.test_basic_parse)
+        thread.start()
+        thread.join()
+
     def test_parse(self):
         events = self.backend.parse(StringIO(JSON))
         events = [value
@@ -193,49 +198,6 @@ class Builder(unittest.TestCase):
             None,
         ])
 
-class FuncThread(threading.Thread):
-    def __init__(self, func):
-        super(FuncThread, self).__init__()
-        self.func = func
-
-    def run(self):
-        self.func()
-
-class ParseThreaded(Parse):
-    def test_basic_parse(self):
-        t = FuncThread(super(ParseThreaded, self).test_basic_parse)
-        t.start()
-        t.join()
-
-    def test_parse(self):
-        t = FuncThread(super(ParseThreaded, self).test_parse)
-        t.start()
-        t.join()
-
-    def test_scalar(self):
-        t = FuncThread(super(ParseThreaded, self).test_scalar)
-        t.start()
-        t.join()
-
-    def test_empty(self):
-        t = FuncThread(super(ParseThreaded, self).test_empty)
-        t.start()
-        t.join()
-
-    def test_incomplete(self):
-        t = FuncThread(super(ParseThreaded, self).test_incomplete)
-        t.start()
-        t.join()
-
-    def test_invalid(self):
-        t = FuncThread(super(ParseThreaded, self).test_invalid)
-        t.start()
-        t.join()
-
-    def test_lazy(self):
-        t = FuncThread(super(ParseThreaded, self).test_lazy)
-        t.start()
-        t.join()
 
 if __name__ == '__main__':
     unittest.main()
