@@ -3,9 +3,10 @@ import unittest
 from cStringIO import StringIO
 from decimal import Decimal
 import threading
+from importlib import import_module
 
-from ijson import parse, basic_parse, JSONError, IncompleteJSONError, ObjectBuilder, items
-
+from ijson.common import JSONError, IncompleteJSONError, ObjectBuilder
+import ijson.backends.python as ijson
 
 JSON = r'''
 {
@@ -44,9 +45,13 @@ STRINGS_JSON = r'''
 }
 '''
 
-class Parse(unittest.TestCase):
+class Parse(object):
+    '''
+    Base class for parsing tests that is used to create test cases for each
+    available backends.
+    '''
     def test_basic_parse(self):
-        events = list(basic_parse(StringIO(JSON)))
+        events = list(self.backend.basic_parse(StringIO(JSON)))
         reference = [
             ('start_map', None),
                 ('map_key', 'docs'),
@@ -95,7 +100,7 @@ class Parse(unittest.TestCase):
             self.assertEqual(e, r)
 
     def test_parse(self):
-        events = parse(StringIO(JSON))
+        events = self.backend.parse(StringIO(JSON))
         events = [value
             for prefix, event, value in events
             if prefix == 'docs.item.meta.item.item'
@@ -103,42 +108,53 @@ class Parse(unittest.TestCase):
         self.assertEqual(events, [1])
 
     def test_scalar(self):
-        events = list(parse(StringIO(SCALAR_JSON)))
-        self.assertEqual(events, [('', 'number', 0)])
+        events = list(self.backend.basic_parse(StringIO(SCALAR_JSON)))
+        self.assertEqual(events, [('number', 0)])
 
     def test_strings(self):
-        events = list(parse(StringIO(STRINGS_JSON)))
-        strings = [value for prefix, event, value in events if event == 'string']
+        events = list(self.backend.basic_parse(StringIO(STRINGS_JSON)))
+        strings = [value for event, value in events if event == 'string']
         self.assertEqual(strings, ['', '"', '\\', '\\\\'])
 
     def test_empty(self):
         self.assertRaises(
             IncompleteJSONError,
-            lambda: list(parse(StringIO(EMPTY_JSON))),
+            lambda: list(self.backend.basic_parse(StringIO(EMPTY_JSON))),
         )
 
     def test_incomplete(self):
         self.assertRaises(
             IncompleteJSONError,
-            lambda: list(parse(StringIO(INCOMPLETE_JSON))),
+            lambda: list(self.backend.basic_parse(StringIO(INCOMPLETE_JSON))),
         )
 
     def test_invalid(self):
         self.assertRaises(
             JSONError,
-            lambda: list(parse(StringIO(INVALID_JSON))),
+            lambda: list(self.backend.basic_parse(StringIO(INVALID_JSON))),
         )
 
     def test_lazy(self):
         # shouldn't fail since iterator is not exhausted
-        parse(StringIO(INVALID_JSON))
+        self.backend.basic_parse(StringIO(INVALID_JSON))
         self.assertTrue(True)
 
+# Generating real TestCase classes for each importable backend
+for name in ['python', 'yajl', 'yajl2']:
+    try:
+        classname = '%sParse' % name.capitalize()
+        locals()[classname] = type(
+            classname,
+            (unittest.TestCase, Parse),
+            {'backend': import_module('ijson.backends.%s' % name)},
+        )
+    except ImportError:
+        pass
 
 class Builder(unittest.TestCase):
     def test_object_builder(self):
         builder = ObjectBuilder()
-        for event, value in basic_parse(StringIO(JSON)):
+        for event, value in ijson.basic_parse(StringIO(JSON)):
             builder.event(event, value)
         self.assertEqual(builder.value, {
             'docs': [
@@ -165,12 +181,12 @@ class Builder(unittest.TestCase):
 
     def test_scalar_builder(self):
         builder = ObjectBuilder()
-        for event, value in basic_parse(StringIO(SCALAR_JSON)):
+        for event, value in ijson.basic_parse(StringIO(SCALAR_JSON)):
             builder.event(event, value)
         self.assertEqual(builder.value, 0)
 
     def test_items(self):
-        meta = list(items(StringIO(JSON), 'docs.item.meta'))
+        meta = list(ijson.items(StringIO(JSON), 'docs.item.meta'))
         self.assertEqual(meta, [
             [[1], {}],
             {'key': 'value'},
