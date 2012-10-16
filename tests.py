@@ -5,8 +5,8 @@ from decimal import Decimal
 import threading
 from importlib import import_module
 
-from ijson.common import JSONError, IncompleteJSONError, ObjectBuilder
-import ijson.backends.python as ijson
+from ijson.common import JSONError, IncompleteJSONError, ObjectBuilder, parse, items
+from ijson.backends.python import basic_parse
 
 JSON = r'''
 {
@@ -104,14 +104,6 @@ class Parse(object):
         thread.start()
         thread.join()
 
-    def test_parse(self):
-        events = self.backend.parse(StringIO(JSON))
-        events = [value
-            for prefix, event, value in events
-            if prefix == 'docs.item.meta.item.item'
-        ]
-        self.assertEqual(events, [1])
-
     def test_scalar(self):
         events = list(self.backend.basic_parse(StringIO(SCALAR_JSON)))
         self.assertEqual(events, [('number', 0)])
@@ -156,10 +148,10 @@ for name in ['python', 'yajl', 'yajl2']:
     except ImportError:
         pass
 
-class Builder(unittest.TestCase):
+class Common(unittest.TestCase):
     def test_object_builder(self):
         builder = ObjectBuilder()
-        for event, value in ijson.basic_parse(StringIO(JSON)):
+        for event, value in basic_parse(StringIO(JSON)):
             builder.event(event, value)
         self.assertEqual(builder.value, {
             'docs': [
@@ -186,12 +178,20 @@ class Builder(unittest.TestCase):
 
     def test_scalar_builder(self):
         builder = ObjectBuilder()
-        for event, value in ijson.basic_parse(StringIO(SCALAR_JSON)):
+        for event, value in basic_parse(StringIO(SCALAR_JSON)):
             builder.event(event, value)
         self.assertEqual(builder.value, 0)
 
+    def test_parse(self):
+        events = parse(basic_parse(StringIO(JSON)))
+        events = [value
+            for prefix, event, value in events
+            if prefix == 'docs.item.meta.item.item'
+        ]
+        self.assertEqual(events, [1])
+
     def test_items(self):
-        meta = list(ijson.items(StringIO(JSON), 'docs.item.meta'))
+        meta = list(items(parse(basic_parse(StringIO(JSON))), 'docs.item.meta'))
         self.assertEqual(meta, [
             [[1], {}],
             {'key': 'value'},
