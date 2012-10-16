@@ -149,6 +149,10 @@ for name in ['python', 'yajl', 'yajl2']:
         pass
 
 class Common(unittest.TestCase):
+    '''
+    Backend independent tests. They all use basic_parse imported explicitly from
+    the python backend to generate parsing events.
+    '''
     def test_object_builder(self):
         builder = ObjectBuilder()
         for event, value in basic_parse(StringIO(JSON)):
