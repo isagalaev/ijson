@@ -1,3 +1,7 @@
+'''
+Pure-python parsing backend.
+'''
+
 from decimal import Decimal
 import re
 
@@ -14,6 +18,9 @@ class UnexpectedSymbol(common.JSONError):
         super(UnexpectedSymbol, self).__init__('Unexpected symbol "%s" at %d' % (symbol[0], reader.pos - len(symbol)))
 
 class Lexer(object):
+    '''
+    JSON lexer. Supports iterator interface.
+    '''
     def __init__(self, f):
         self.f = f
 
@@ -140,6 +147,13 @@ def parse_object(lexer):
     yield ('end_map', None)
 
 def basic_parse(file):
+    '''
+    Iterator yielding unprefixed events.
+
+    Parameters:
+
+    - file: a readable file-like object with JSON input
+    '''
     lexer = iter(Lexer(file))
     for value in parse_value(lexer):
         yield value
@@ -151,7 +165,13 @@ def basic_parse(file):
         raise common.JSONError('Additional data')
 
 def parse(file):
+    '''
+    Backend-specific wrapper for ijson.common.parse.
+    '''
     return common.parse(basic_parse(file))
 
 def items(file, prefix):
+    '''
+    Backend-specific wrapper for ijson.common.items.
+    '''
     return common.items(parse(file), prefix)

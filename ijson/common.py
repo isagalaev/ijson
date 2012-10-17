@@ -1,48 +1,63 @@
+'''
+Backend independent higher level interfaces, common exceptions.
+'''
+
 class JSONError(Exception):
+    '''
+    Base exception for all parsing errors.
+    '''
     pass
 
 class IncompleteJSONError(JSONError):
+    '''
+    Raised when the parser expects data and it's not available. May be
+    caused by malformed syntax or a broken source stream.
+    '''
     def __init__(self):
         super(IncompleteJSONError, self).__init__('Incomplete or empty JSON data')
 
 def parse(basic_events):
     '''
-    An iterator returning prefixed events from the basic events as returned from
-    a backend's `basic_parse`. Prefixes represent the path to the nested elements
-    from the root of the JSON document.
+    An iterator returning parsing events with the information about their location
+    with the JSON object tree. Events are tuples ``(prefix, type, value)``.
 
-    For example, given this document:
+    Available types and values are:
+
+    ('null', None)
+    ('boolean', <True or False>)
+    ('number', <int or Decimal>)
+    ('string', <unicode>)
+    ('map_key', <str>)
+    ('start_map', None)
+    ('end_map', None)
+    ('start_array', None)
+    ('end_array', None)
+
+    Prefixes represent the path to the nested elements from the root of the JSON
+    document. For example, given this document::
 
         {
-            "array": [1, 2],
-            "map": {
-                "key": "value"
-            }
+          "array": [1, 2],
+          "map": {
+            "key": "value"
+          }
         }
 
     the parser would yield events:
 
-        ('', 'start_map', None)
-        ('', 'map_key', 'array')
-        ('array', 'start_array', None)
-        ('array.item', 'number', 1)
-        ('array.item', 'number', 2)
-        ('array', 'end_array', None)
-        ('', 'map_key', 'map')
-        ('map', 'start_map', None)
-        ('map', 'map_key', 'key')
-        ('map.key', 'string', u'value')
-        ('map', 'end_map', None)
-        ('', 'end_map', None)
+      ('', 'start_map', None)
+      ('', 'map_key', 'array')
+      ('array', 'start_array', None)
+      ('array.item', 'number', 1)
+      ('array.item', 'number', 2)
+      ('array', 'end_array', None)
+      ('', 'map_key', 'map')
+      ('map', 'start_map', None)
+      ('map', 'map_key', 'key')
+      ('map.key', 'string', u'value')
+      ('map', 'end_map', None)
+      ('', 'end_map', None)
 
-    For the list of all available event types refer to `basic_parse` function.
-
-    Parameters:
-
-    - f: a readable file-like object with JSON input
-    - allow_comments: tells parser to allow comments in JSON input
-    - check_utf8: if True, parser will cause an error if input is invalid utf-8
-    - buf_size: a size of an input buffer
     '''
     path = []
     for event, value in basic_events:
@@ -74,7 +89,7 @@ class ObjectBuilder(object):
     value. The object being built is available at any time from the `value`
     attribute.
 
-    Example:
+    Example::
 
         from StringIO import StringIO
         from ijson.parse import basic_parse
@@ -113,8 +128,7 @@ class ObjectBuilder(object):
 def items(prefixed_events, prefix):
     '''
     An iterator returning native Python objects constructed from the events
-    under a given prefix. The `prefixed_events` is an iterator of events as
-    returned from `parse`.
+    under a given prefix.
     '''
     prefixed_events = iter(prefixed_events)
     try:

@@ -1,3 +1,7 @@
+'''
+Wrapper for YAJL C library version 1.x.
+'''
+
 from ctypes import Structure, c_uint, c_ubyte, c_int, c_long, c_double, \
                    c_void_p, c_char_p, CFUNCTYPE, POINTER, byref, string_at, cast , \
                    cdll, util, c_char
@@ -64,9 +68,7 @@ YAJL_ERROR = 3
 
 def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
     '''
-    An iterator returning events from a JSON being parsed. This basic parser
-    doesn't maintain any context and just returns parser events from an
-    underlying library, converting them into Python native data types.
+    Iterator yielding unprefixed events.
 
     Parameters:
 
@@ -74,19 +76,6 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
     - allow_comments: tells parser to allow comments in JSON input
     - check_utf8: if True, parser will cause an error if input is invalid utf-8
     - buf_size: a size of an input buffer
-
-    Events returned from parser are pairs of (event type, value) and can be as
-    follows:
-
-        ('null', None)
-        ('boolean', <True or False>)
-        ('number', <int or Decimal>)
-        ('string', <unicode>)
-        ('map_key', <str>)
-        ('start_map', None)
-        ('end_map', None)
-        ('start_array', None)
-        ('end_array', None)
     '''
     events = []
 
@@ -123,7 +112,13 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
         yajl.yajl_free(handle)
 
 def parse(file, **kwargs):
+    '''
+    Backend-specific wrapper for ijson.common.parse.
+    '''
     return common.parse(basic_parse(file, **kwargs))
 
 def items(file, prefix):
+    '''
+    Backend-specific wrapper for ijson.common.items.
+    '''
     return common.items(parse(file), prefix)
