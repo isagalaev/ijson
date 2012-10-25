@@ -133,14 +133,14 @@ def items(prefixed_events, prefix):
     prefixed_events = iter(prefixed_events)
     try:
         while True:
-            current, event, value = prefixed_events.next()
+            current, event, value = next(prefixed_events)
             if current == prefix:
                 if event in ('start_map', 'start_array'):
                     builder = ObjectBuilder()
                     end_event = event.replace('start', 'end')
                     while (current, event) != (prefix, end_event):
                         builder.event(event, value)
-                        current, event, value = prefixed_events.next()
+                        current, event, value = next(prefixed_events)
                     yield builder.value
                 else:
                     yield value

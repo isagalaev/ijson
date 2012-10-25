@@ -8,6 +8,7 @@ from ctypes import Structure, c_uint, c_ubyte, c_int, c_long, c_double, \
 from decimal import Decimal
 
 from ijson import common, backends
+from ijson.compat import b2s
 
 
 yajl = backends.find_yajl(1)
@@ -42,10 +43,10 @@ _callback_data = [
     # takes precedence if defined
     ('integer', C_LONG, lambda v, l: int(string_at(v, l))),
     ('double', C_DOUBLE, lambda v, l: float(string_at(v, l))),
-    ('number', C_STR, lambda v, l: number(string_at(v, l))),
+    ('number', C_STR, lambda v, l: number(b2s(string_at(v, l)))),
     ('string', C_STR, lambda v, l: string_at(v, l).decode('utf-8')),
     ('start_map', C_EMPTY, lambda: None),
-    ('map_key', C_STR, lambda v, l: string_at(v, l)),
+    ('map_key', C_STR, lambda v, l: b2s(string_at(v, l))),
     ('end_map', C_EMPTY, lambda: None),
     ('start_array', C_EMPTY, lambda: None),
     ('end_array', C_EMPTY, lambda: None),

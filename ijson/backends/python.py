@@ -4,8 +4,10 @@ Pure-python parsing backend.
 
 from decimal import Decimal
 import re
+from codecs import unicode_escape_decode
 
 from ijson import common
+from ijson.compat import s, b2s
 
 
 BUFSIZE = 16 * 1024
@@ -25,11 +27,11 @@ class Lexer(object):
         self.f = f
 
     def __iter__(self):
-        self.buffer = ''
+        self.buffer = s('')
         self.pos = 0
         return self
 
-    def next(self):
+    def __next__(self):
         while True:
             match = NONWS.search(self.buffer, self.pos)
             if match:
@@ -42,10 +44,11 @@ class Lexer(object):
                 else:
                     self.pos += 1
                     return char
-            self.buffer = self.f.read(BUFSIZE)
+            self.buffer = b2s(self.f.read(BUFSIZE))
             self.pos = 0
             if not len(self.buffer):
                 raise common.IncompleteJSONError()
+    next = __next__
 
     def lexem(self):
         current = self.pos
@@ -56,7 +59,7 @@ class Lexer(object):
                 break
             else:
                 current = len(self.buffer)
-                self.buffer += self.f.read(BUFSIZE)
+                self.buffer += b2s(self.f.read(BUFSIZE))
                 if len(self.buffer) == current:
                     break
         result = self.buffer[self.pos:current]
@@ -82,7 +85,7 @@ class Lexer(object):
                     return result
             except ValueError:
                 old_len = len(self.buffer)
-                self.buffer += self.f.read(BUFSIZE)
+                self.buffer += b2s(self.f.read(BUFSIZE))
                 if len(self.buffer) == old_len:
                     raise common.IncompleteJSONError()
 
@@ -102,7 +105,7 @@ def parse_value(lexer, symbol=None):
         for event in parse_object(lexer):
             yield event
     elif symbol[0] == '"':
-        yield ('string', symbol[1:-1].decode('unicode-escape'))
+        yield ('string', unicode_escape_decode(symbol[1:-1])[0])
     else:
         try:
             number = Decimal(symbol) if '.' in symbol else int(symbol)

@@ -1,15 +1,16 @@
 # -*- coding:utf-8 -*-
 import unittest
-from cStringIO import StringIO
+from io import BytesIO
 from decimal import Decimal
 import threading
 from importlib import import_module
 
 from ijson import common
 from ijson.backends.python import basic_parse
+from ijson.compat import u, b, s
 
 
-JSON = r'''
+JSON = b(r'''
 {
   "docs": [
     {
@@ -32,19 +33,19 @@ JSON = r'''
     }
   ]
 }
-'''
-SCALAR_JSON = '0'
-EMPTY_JSON = ''
-INVALID_JSON = '{"key": "value",}'
-INCOMPLETE_JSON = '"test'
-STRINGS_JSON = r'''
+''')
+SCALAR_JSON = b('0')
+EMPTY_JSON = b('')
+INVALID_JSON = b('{"key": "value",}')
+INCOMPLETE_JSON = b('"test')
+STRINGS_JSON = b(r'''
 {
     "str1": "",
     "str2": "\"",
     "str3": "\\",
     "str4": "\\\\"
 }
-'''
+''')
 
 class Parse(object):
     '''
@@ -52,29 +53,29 @@ class Parse(object):
     available backends.
     '''
     def test_basic_parse(self):
-        events = list(self.backend.basic_parse(StringIO(JSON)))
+        events = list(self.backend.basic_parse(BytesIO(JSON)))
         reference = [
             ('start_map', None),
-                ('map_key', 'docs'),
+                ('map_key', s('docs')),
                 ('start_array', None),
                     ('start_map', None),
                         ('map_key', 'string'),
-                        ('string', u'строка'),
-                        ('map_key', 'null'),
+                        ('string', u('строка')),
+                        ('map_key', s('null')),
                         ('null', None),
-                        ('map_key', 'boolean'),
+                        ('map_key', s('boolean')),
                         ('boolean', False),
-                        ('map_key', 'integer'),
+                        ('map_key', s('integer')),
                         ('number', 0),
-                        ('map_key', 'double'),
+                        ('map_key', s('double')),
                         ('number', Decimal('0.5')),
-                        ('map_key', 'long'),
+                        ('map_key', s('long')),
                         ('number', 10000000000),
-                        ('map_key', 'decimal'),
+                        ('map_key', s('decimal')),
                         ('number', Decimal('10000000000.5')),
                     ('end_map', None),
                     ('start_map', None),
-                        ('map_key', 'meta'),
+                        ('map_key', s('meta')),
                         ('start_array', None),
                             ('start_array', None),
                                 ('number', 1),
@@ -84,14 +85,14 @@ class Parse(object):
                         ('end_array', None),
                     ('end_map', None),
                     ('start_map', None),
-                        ('map_key', 'meta'),
+                        ('map_key', s('meta')),
                         ('start_map', None),
-                            ('map_key', 'key'),
+                            ('map_key', s('key')),
                             ('string', 'value'),
                         ('end_map', None),
                     ('end_map', None),
                     ('start_map', None),
-                        ('map_key', 'meta'),
+                        ('map_key', s('meta')),
                         ('null', None),
                     ('end_map', None),
                 ('end_array', None),
@@ -106,35 +107,35 @@ class Parse(object):
         thread.join()
 
     def test_scalar(self):
-        events = list(self.backend.basic_parse(StringIO(SCALAR_JSON)))
+        events = list(self.backend.basic_parse(BytesIO(SCALAR_JSON)))
         self.assertEqual(events, [('number', 0)])
 
     def test_strings(self):
-        events = list(self.backend.basic_parse(StringIO(STRINGS_JSON)))
+        events = list(self.backend.basic_parse(BytesIO(STRINGS_JSON)))
         strings = [value for event, value in events if event == 'string']
         self.assertEqual(strings, ['', '"', '\\', '\\\\'])
 
     def test_empty(self):
         self.assertRaises(
             common.IncompleteJSONError,
-            lambda: list(self.backend.basic_parse(StringIO(EMPTY_JSON))),
+            lambda: list(self.backend.basic_parse(BytesIO(EMPTY_JSON))),
         )
 
     def test_incomplete(self):
         self.assertRaises(
             common.IncompleteJSONError,
-            lambda: list(self.backend.basic_parse(StringIO(INCOMPLETE_JSON))),
+            lambda: list(self.backend.basic_parse(BytesIO(INCOMPLETE_JSON))),
         )
 
     def test_invalid(self):
         self.assertRaises(
             common.JSONError,
-            lambda: list(self.backend.basic_parse(StringIO(INVALID_JSON))),
+            lambda: list(self.backend.basic_parse(BytesIO(INVALID_JSON))),
         )
 
     def test_lazy(self):
         # shouldn't fail since iterator is not exhausted
-        self.backend.basic_parse(StringIO(INVALID_JSON))
+        self.backend.basic_parse(BytesIO(INVALID_JSON))
         self.assertTrue(True)
 
 # Generating real TestCase classes for each importable backend
@@ -156,12 +157,12 @@ class Common(unittest.TestCase):
     '''
     def test_object_builder(self):
         builder = common.ObjectBuilder()
-        for event, value in basic_parse(StringIO(JSON)):
+        for event, value in basic_parse(BytesIO(JSON)):
             builder.event(event, value)
         self.assertEqual(builder.value, {
             'docs': [
                 {
-                   'string': u'строка',
+                   'string': u('строка'),
                    'null': None,
                    'boolean': False,
                    'integer': 0,
@@ -183,12 +184,12 @@ class Common(unittest.TestCase):
 
     def test_scalar_builder(self):
         builder = common.ObjectBuilder()
-        for event, value in basic_parse(StringIO(SCALAR_JSON)):
+        for event, value in basic_parse(BytesIO(SCALAR_JSON)):
             builder.event(event, value)
         self.assertEqual(builder.value, 0)
 
     def test_parse(self):
-        events = common.parse(basic_parse(StringIO(JSON)))
+        events = common.parse(basic_parse(BytesIO(JSON)))
         events = [value
             for prefix, event, value in events
             if prefix == 'docs.item.meta.item.item'
@@ -196,7 +197,7 @@ class Common(unittest.TestCase):
         self.assertEqual(events, [1])
 
     def test_items(self):
-        events = basic_parse(StringIO(JSON))
+        events = basic_parse(BytesIO(JSON))
         meta = list(common.items(common.parse(events), 'docs.item.meta'))
         self.assertEqual(meta, [
             [[1], {}],
