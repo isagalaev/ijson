@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+from __future__ import unicode_literals
 import unittest
 from io import BytesIO
 from decimal import Decimal
@@ -7,10 +8,10 @@ from importlib import import_module
 
 from ijson import common
 from ijson.backends.python import basic_parse
-from ijson.compat import u, b
+from ijson.compat import IS_PY2
 
 
-JSON = b(r'''
+JSON = br'''
 {
   "docs": [
     {
@@ -33,19 +34,19 @@ JSON = b(r'''
     }
   ]
 }
-''')
-SCALAR_JSON = b('0')
-EMPTY_JSON = b('')
-INVALID_JSON = b('{"key": "value",}')
-INCOMPLETE_JSON = b('"test')
-STRINGS_JSON = b(r'''
+'''
+SCALAR_JSON = b'0'
+EMPTY_JSON = b''
+INVALID_JSON = b'{"key": "value",}'
+INCOMPLETE_JSON = b'"test'
+STRINGS_JSON = br'''
 {
     "str1": "",
     "str2": "\"",
     "str3": "\\",
     "str4": "\\\\"
 }
-''')
+'''
 
 class Parse(object):
     '''
@@ -60,7 +61,7 @@ class Parse(object):
                 ('start_array', None),
                     ('start_map', None),
                         ('map_key', 'string'),
-                        ('string', u('строка')),
+                        ('string', 'строка'),
                         ('map_key', 'null'),
                         ('null', None),
                         ('map_key', 'boolean'),
@@ -142,6 +143,8 @@ class Parse(object):
 for name in ['python', 'yajl', 'yajl2']:
     try:
         classname = '%sParse' % name.capitalize()
+        if IS_PY2:
+            classname = classname.encode('ascii')
         locals()[classname] = type(
             classname,
             (unittest.TestCase, Parse),
@@ -162,7 +165,7 @@ class Common(unittest.TestCase):
         self.assertEqual(builder.value, {
             'docs': [
                 {
-                   'string': u('строка'),
+                   'string': 'строка',
                    'null': None,
                    'boolean': False,
                    'integer': 0,

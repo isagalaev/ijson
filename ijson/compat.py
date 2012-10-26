@@ -9,13 +9,7 @@ IS_PY2 = sys.version_info[0] < 3
 
 
 if IS_PY2:
-    def u(s):
-        return s.decode('utf-8')
-    b = lambda s: s
-    b2s = b
+    b2s = lambda s: s
 else:
-    u = lambda s: s
-    def b(s):
-        return s.encode('utf-8')
     def b2s(b):
         return b.decode('utf-8')
