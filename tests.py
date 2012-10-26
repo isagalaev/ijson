@@ -7,7 +7,7 @@ from importlib import import_module
 
 from ijson import common
 from ijson.backends.python import basic_parse
-from ijson.compat import u, b, s
+from ijson.compat import u, b
 
 
 JSON = b(r'''
@@ -56,26 +56,26 @@ class Parse(object):
         events = list(self.backend.basic_parse(BytesIO(JSON)))
         reference = [
             ('start_map', None),
-                ('map_key', s('docs')),
+                ('map_key', 'docs'),
                 ('start_array', None),
                     ('start_map', None),
                         ('map_key', 'string'),
                         ('string', u('строка')),
-                        ('map_key', s('null')),
+                        ('map_key', 'null'),
                         ('null', None),
-                        ('map_key', s('boolean')),
+                        ('map_key', 'boolean'),
                         ('boolean', False),
-                        ('map_key', s('integer')),
+                        ('map_key', 'integer'),
                         ('number', 0),
-                        ('map_key', s('double')),
+                        ('map_key', 'double'),
                         ('number', Decimal('0.5')),
-                        ('map_key', s('long')),
+                        ('map_key', 'long'),
                         ('number', 10000000000),
-                        ('map_key', s('decimal')),
+                        ('map_key', 'decimal'),
                         ('number', Decimal('10000000000.5')),
                     ('end_map', None),
                     ('start_map', None),
-                        ('map_key', s('meta')),
+                        ('map_key', 'meta'),
                         ('start_array', None),
                             ('start_array', None),
                                 ('number', 1),
@@ -85,14 +85,14 @@ class Parse(object):
                         ('end_array', None),
                     ('end_map', None),
                     ('start_map', None),
-                        ('map_key', s('meta')),
+                        ('map_key', 'meta'),
                         ('start_map', None),
-                            ('map_key', s('key')),
+                            ('map_key', 'key'),
                             ('string', 'value'),
                         ('end_map', None),
                     ('end_map', None),
                     ('start_map', None),
-                        ('map_key', s('meta')),
+                        ('map_key', 'meta'),
                         ('null', None),
                     ('end_map', None),
                 ('end_array', None),

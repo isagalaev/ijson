@@ -7,7 +7,7 @@ import re
 from codecs import unicode_escape_decode
 
 from ijson import common
-from ijson.compat import s, b2s
+from ijson.compat import b2s
 
 
 BUFSIZE = 16 * 1024
@@ -27,7 +27,7 @@ class Lexer(object):
         self.f = f
 
     def __iter__(self):
-        self.buffer = s('')
+        self.buffer = ''
         self.pos = 0
         return self
 
