@@ -91,7 +91,7 @@ class Lexer(object):
 
 def parse_value(lexer, symbol=None):
     try:
-        if symbol == None:
+        if symbol is None:
             symbol = next(lexer)
         if symbol == 'null':
             yield ('null', None)
