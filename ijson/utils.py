@@ -11,7 +11,7 @@ def coroutine(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         g = func(*args, **kwargs)
-        g.next()
+        next(g)
         return g
     return wrapper
 
