@@ -47,7 +47,7 @@ class Lexer(object):
             self.buffer = b2s(self.f.read(BUFSIZE))
             self.pos = 0
             if not len(self.buffer):
-                raise common.IncompleteJSONError()
+                raise StopIteration
     next = __next__
 
     def lexem(self):
@@ -90,63 +90,66 @@ class Lexer(object):
                     raise common.IncompleteJSONError()
 
 def parse_value(lexer, symbol=None):
-    if symbol == None:
-        symbol = lexer.next()
-    if symbol == 'null':
-        yield ('null', None)
-    elif symbol == 'true':
-        yield ('boolean', True)
-    elif symbol == 'false':
-        yield ('boolean', False)
-    elif symbol == '[':
-        for event in parse_array(lexer):
-            yield event
-    elif symbol == '{':
-        for event in parse_object(lexer):
-            yield event
-    elif symbol[0] == '"':
-        yield ('string', unicode_escape_decode(symbol[1:-1])[0])
-    else:
-        try:
-            number = Decimal(symbol) if '.' in symbol else int(symbol)
-            yield ('number', number)
-        except ValueError:
-            raise UnexpectedSymbol(symbol, lexer)
+    try:
+        if symbol == None:
+            symbol = next(lexer)
+        if symbol == 'null':
+            yield ('null', None)
+        elif symbol == 'true':
+            yield ('boolean', True)
+        elif symbol == 'false':
+            yield ('boolean', False)
+        elif symbol == '[':
+            for event in parse_array(lexer):
+                yield event
+        elif symbol == '{':
+            for event in parse_object(lexer):
+                yield event
+        elif symbol[0] == '"':
+            yield ('string', unicode_escape_decode(symbol[1:-1])[0])
+        else:
+            try:
+                number = Decimal(symbol) if '.' in symbol else int(symbol)
+                yield ('number', number)
+            except ValueError:
+                raise UnexpectedSymbol(symbol, lexer)
+    except StopIteration:
+        raise common.IncompleteJSONError()
 
 def parse_array(lexer):
     yield ('start_array', None)
-    symbol = lexer.next()
+    symbol = next(lexer)
     if symbol != ']':
         while True:
             for event in parse_value(lexer, symbol):
                 yield event
-            symbol = lexer.next()
+            symbol = next(lexer)
             if symbol == ']':
                 break
             if symbol != ',':
                 raise UnexpectedSymbol(symbol, lexer)
-            symbol = lexer.next()
+            symbol = next(lexer)
     yield ('end_array', None)
 
 def parse_object(lexer):
     yield ('start_map', None)
-    symbol = lexer.next()
+    symbol = next(lexer)
     if symbol != '}':
         while True:
             if symbol[0] != '"':
                 raise UnexpectedSymbol(symbol, lexer)
             yield ('map_key', symbol[1:-1])
-            symbol = lexer.next()
+            symbol = next(lexer)
             if symbol != ':':
                 raise UnexpectedSymbol(symbol, lexer)
             for event in parse_value(lexer):
                 yield event
-            symbol = lexer.next()
+            symbol = next(lexer)
             if symbol == '}':
                 break
             if symbol != ',':
                 raise UnexpectedSymbol(symbol, lexer)
-            symbol = lexer.next()
+            symbol = next(lexer)
     yield ('end_map', None)
 
 def basic_parse(file):
@@ -161,8 +164,8 @@ def basic_parse(file):
     for value in parse_value(lexer):
         yield value
     try:
-        lexer.next()
-    except common.IncompleteJSONError:
+        next(lexer)
+    except StopIteration:
         pass
     else:
         raise common.JSONError('Additional data')
