@@ -89,6 +89,33 @@ class Lexer(object):
                 if len(self.buffer) == old_len:
                     raise common.IncompleteJSONError()
 
+def unescape(s):
+    i = iter(s)
+    try:
+        while True:
+            char = next(i)
+            if char == u'\\':
+                esc = next(i)
+                if esc == u'b':
+                    yield u'\b'
+                elif esc == u'f':
+                    yield u'\f'
+                elif esc == u'n':
+                    yield u'\n'
+                elif esc == u'r':
+                    yield u'\r'
+                elif esc == u't':
+                    yield u'\t'
+                elif esc == u'u':
+                    codepoint = next(i) + next(i) + next(i) + next(i)
+                    yield unichr(int(codepoint, 16))
+                else:
+                    yield esc
+            else:
+                yield char
+    except StopIteration:
+        pass
+
 def parse_value(lexer, symbol=None):
     try:
         if symbol is None:
@@ -106,7 +133,7 @@ def parse_value(lexer, symbol=None):
             for event in parse_object(lexer):
                 yield event
         elif symbol[0] == '"':
-            yield ('string', unicode_escape_decode(symbol[1:-1])[0])
+            yield ('string', u''.join(unescape(symbol[1:-1].decode('utf-8'))))
         else:
             try:
                 number = Decimal(symbol) if '.' in symbol else int(symbol)
