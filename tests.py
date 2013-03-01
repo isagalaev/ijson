@@ -15,7 +15,7 @@ JSON = br'''
 {
   "docs": [
     {
-      "string": "\u0441\u0442\u0440\u043e\u043a\u0430",
+      "string": "\u0441\u0442\u0440\u043e\u043a\u0430 - тест",
       "null": null,
       "boolean": false,
       "integer": 0,
@@ -61,7 +61,7 @@ class Parse(object):
                 ('start_array', None),
                     ('start_map', None),
                         ('map_key', 'string'),
-                        ('string', 'строка'),
+                        ('string', 'строка - тест'),
                         ('map_key', 'null'),
                         ('null', None),
                         ('map_key', 'boolean'),
@@ -165,7 +165,7 @@ class Common(unittest.TestCase):
         self.assertEqual(builder.value, {
             'docs': [
                 {
-                   'string': 'строка',
+                   'string': 'строка - тест',
                    'null': None,
                    'boolean': False,
                    'integer': 0,
