@@ -90,31 +90,31 @@ class Lexer(object):
                     raise common.IncompleteJSONError()
 
 def unescape(s):
-    i = iter(s)
-    try:
-        while True:
-            char = next(i)
-            if char == u'\\':
-                esc = next(i)
-                if esc == u'b':
-                    yield u'\b'
-                elif esc == u'f':
-                    yield u'\f'
-                elif esc == u'n':
-                    yield u'\n'
-                elif esc == u'r':
-                    yield u'\r'
-                elif esc == u't':
-                    yield u'\t'
-                elif esc == u'u':
-                    codepoint = next(i) + next(i) + next(i) + next(i)
-                    yield unichr(int(codepoint, 16))
-                else:
-                    yield esc
-            else:
-                yield char
-    except StopIteration:
-        pass
+    start = 0
+    while start < len(s):
+        pos = s.find(u'\\', start)
+        if pos == -1:
+            yield s[start:]
+            break
+        yield s[start:pos]
+        pos += 1
+        esc = s[pos]
+        if esc == u'b':
+            yield u'\b'
+        elif esc == u'f':
+            yield u'\f'
+        elif esc == u'n':
+            yield u'\n'
+        elif esc == u'r':
+            yield u'\r'
+        elif esc == u't':
+            yield u'\t'
+        elif esc == u'u':
+            yield unichr(int(s[pos + 1:pos + 5], 16))
+            pos += 4
+        else:
+            yield esc
+        start = pos + 1
 
 def parse_value(lexer, symbol=None):
     try:
