@@ -1,13 +1,13 @@
 '''
 Pure-python parsing backend.
 '''
-
+from __future__ import unicode_literals
 from decimal import Decimal
 import re
 from codecs import unicode_escape_decode
 
 from ijson import common
-from ijson.compat import b2s, s2u, chr
+from ijson.compat import chr
 
 
 BUFSIZE = 16 * 1024
@@ -44,7 +44,7 @@ class Lexer(object):
                 else:
                     self.pos += 1
                     return char
-            self.buffer = b2s(self.f.read(BUFSIZE))
+            self.buffer = self.f.read(BUFSIZE).decode('utf-8')
             self.pos = 0
             if not len(self.buffer):
                 raise StopIteration
@@ -59,7 +59,7 @@ class Lexer(object):
                 break
             else:
                 current = len(self.buffer)
-                self.buffer += b2s(self.f.read(BUFSIZE))
+                self.buffer += self.f.read(BUFSIZE).decode('utf-8')
                 if len(self.buffer) == current:
                     break
         result = self.buffer[self.pos:current]
@@ -85,31 +85,31 @@ class Lexer(object):
                     return result
             except ValueError:
                 old_len = len(self.buffer)
-                self.buffer += b2s(self.f.read(BUFSIZE))
+                self.buffer += self.f.read(BUFSIZE).decode('utf-8')
                 if len(self.buffer) == old_len:
                     raise common.IncompleteJSONError()
 
 def unescape(s):
     start = 0
     while start < len(s):
-        pos = s.find(u'\\', start)
+        pos = s.find('\\', start)
         if pos == -1:
             yield s[start:]
             break
         yield s[start:pos]
         pos += 1
         esc = s[pos]
-        if esc == u'b':
-            yield u'\b'
-        elif esc == u'f':
-            yield u'\f'
-        elif esc == u'n':
-            yield u'\n'
-        elif esc == u'r':
-            yield u'\r'
-        elif esc == u't':
-            yield u'\t'
-        elif esc == u'u':
+        if esc == 'b':
+            yield '\b'
+        elif esc == 'f':
+            yield '\f'
+        elif esc == 'n':
+            yield '\n'
+        elif esc == 'r':
+            yield '\r'
+        elif esc == 't':
+            yield '\t'
+        elif esc == 'u':
             yield chr(int(s[pos + 1:pos + 5], 16))
             pos += 4
         else:
@@ -133,7 +133,7 @@ def parse_value(lexer, symbol=None):
             for event in parse_object(lexer):
                 yield event
         elif symbol[0] == '"':
-            yield ('string', u''.join(unescape(s2u(symbol[1:-1]))))
+            yield ('string', ''.join(unescape(symbol[1:-1])))
         else:
             try:
                 number = Decimal(symbol) if '.' in symbol else int(symbol)
