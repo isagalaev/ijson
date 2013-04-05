@@ -11,11 +11,11 @@ from ijson.backends.python import basic_parse
 from ijson.compat import IS_PY2
 
 
-JSON = br'''
+JSON = b'''
 {
   "docs": [
     {
-      "string": "\u0441\u0442\u0440\u043e\u043a\u0430 - тест",
+      "string": "\\u0441\\u0442\\u0440\\u043e\\u043a\\u0430 - \xd1\x82\xd0\xb5\xd1\x81\xd1\x82",
       "null": null,
       "boolean": false,
       "integer": 0,
