@@ -7,7 +7,7 @@ import re
 from codecs import unicode_escape_decode
 
 from ijson import common
-from ijson.compat import b2s
+from ijson.compat import b2s, s2u, chr
 
 
 BUFSIZE = 16 * 1024
@@ -110,7 +110,7 @@ def unescape(s):
         elif esc == u't':
             yield u'\t'
         elif esc == u'u':
-            yield unichr(int(s[pos + 1:pos + 5], 16))
+            yield chr(int(s[pos + 1:pos + 5], 16))
             pos += 4
         else:
             yield esc
@@ -133,7 +133,7 @@ def parse_value(lexer, symbol=None):
             for event in parse_object(lexer):
                 yield event
         elif symbol[0] == '"':
-            yield ('string', u''.join(unescape(symbol[1:-1].decode('utf-8'))))
+            yield ('string', u''.join(unescape(s2u(symbol[1:-1]))))
         else:
             try:
                 number = Decimal(symbol) if '.' in symbol else int(symbol)
