@@ -60,10 +60,13 @@ YAJL_CANCELLED = 1
 YAJL_INSUFFICIENT_DATA = 2
 YAJL_ERROR = 3
 
+# constants defined in yajl_parse.h
 YAJL_ALLOW_COMMENTS = 1
+YAJL_MULTIPLE_VALUES = 8
 
 
-def basic_parse(f, allow_comments=False, buf_size=64 * 1024):
+def basic_parse(f, allow_comments=False, buf_size=64 * 1024,
+                multiple_values=False):
     '''
     Iterator yielding unprefixed events.
 
@@ -72,6 +75,7 @@ def basic_parse(f, allow_comments=False, buf_size=64 * 1024):
     - f: a readable file-like object with JSON input
     - allow_comments: tells parser to allow comments in JSON input
     - buf_size: a size of an input buffer
+    - multiple_values: allows the parser to parse multiple JSON objects
     '''
     events = []
 
@@ -85,6 +89,8 @@ def basic_parse(f, allow_comments=False, buf_size=64 * 1024):
     handle = yajl.yajl_alloc(byref(callbacks), None, None)
     if allow_comments:
         yajl.yajl_config(handle, YAJL_ALLOW_COMMENTS, 1)
+    if multiple_values:
+        yajl.yajl_config(handle, YAJL_MULTIPLE_VALUES, 1)
     try:
         while True:
             buffer = f.read(buf_size)
