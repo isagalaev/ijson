@@ -12,7 +12,7 @@ from ijson.compat import chr
 
 BUFSIZE = 16 * 1024
 NONWS = re.compile(r'\S')
-LEXTERM = re.compile(r'[^a-z0-9\.-]')
+LEXTERM = re.compile(r'[^a-z0-9\.+-]')
 
 
 class UnexpectedSymbol(common.JSONError):
