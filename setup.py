@@ -3,7 +3,7 @@ from distutils.core import setup
 
 setup(
     name = 'ijson',
-    version = '1.0',
+    version = '1.1',
     author = 'Ivan Sagalaev',
     author_email = 'maniac@softwaremaniacs.org',
     packages = ['ijson', 'ijson.backends'],
