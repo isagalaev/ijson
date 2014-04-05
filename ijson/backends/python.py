@@ -4,7 +4,7 @@ Pure-python parsing backend.
 from __future__ import unicode_literals
 from decimal import Decimal
 import re
-from codecs import unicode_escape_decode
+from codecs import unicode_escape_decode, getreader
 
 from ijson import common
 from ijson.compat import chr
@@ -24,7 +24,7 @@ class Lexer(object):
     JSON lexer. Supports iterator interface.
     '''
     def __init__(self, f):
-        self.f = f
+        self.f = getreader('utf-8')(f)
 
     def __iter__(self):
         self.buffer = ''
@@ -44,7 +44,7 @@ class Lexer(object):
                 else:
                     self.pos += 1
                     return char
-            self.buffer = self.f.read(BUFSIZE).decode('utf-8')
+            self.buffer = self.f.read(BUFSIZE)
             self.pos = 0
             if not len(self.buffer):
                 raise StopIteration
@@ -59,7 +59,7 @@ class Lexer(object):
                 break
             else:
                 current = len(self.buffer)
-                self.buffer += self.f.read(BUFSIZE).decode('utf-8')
+                self.buffer += self.f.read(BUFSIZE)
                 if len(self.buffer) == current:
                     break
         result = self.buffer[self.pos:current]
@@ -85,7 +85,7 @@ class Lexer(object):
                     return result
             except ValueError:
                 old_len = len(self.buffer)
-                self.buffer += self.f.read(BUFSIZE).decode('utf-8')
+                self.buffer += self.f.read(BUFSIZE)
                 if len(self.buffer) == old_len:
                     raise common.IncompleteJSONError()
 
