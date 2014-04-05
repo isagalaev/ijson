@@ -134,6 +134,11 @@ class Parse(object):
             lambda: list(self.backend.basic_parse(BytesIO(INVALID_JSON))),
         )
 
+    def test_utf8_split(self):
+        buf_size = JSON.index(b'\xd1') + 1
+        events = list(self.backend.basic_parse(BytesIO(JSON), buf_size=buf_size))
+        self.assertTrue(True)
+
     def test_lazy(self):
         # shouldn't fail since iterator is not exhausted
         self.backend.basic_parse(BytesIO(INVALID_JSON))

@@ -23,8 +23,9 @@ class Lexer(object):
     '''
     JSON lexer. Supports iterator interface.
     '''
-    def __init__(self, f):
+    def __init__(self, f, buf_size=BUFSIZE):
         self.f = getreader('utf-8')(f)
+        self.buf_size = buf_size
 
     def __iter__(self):
         self.buffer = ''
@@ -44,7 +45,7 @@ class Lexer(object):
                 else:
                     self.pos += 1
                     return char
-            self.buffer = self.f.read(BUFSIZE)
+            self.buffer = self.f.read(self.buf_size)
             self.pos = 0
             if not len(self.buffer):
                 raise StopIteration
@@ -59,12 +60,12 @@ class Lexer(object):
                 break
             else:
                 current = len(self.buffer)
-                self.buffer += self.f.read(BUFSIZE)
+                self.buffer += self.f.read(self.buf_size)
                 if len(self.buffer) == current:
                     break
         result = self.buffer[self.pos:current]
         self.pos = current
-        if self.pos > BUFSIZE:
+        if self.pos > self.buf_size:
             self.buffer = self.buffer[self.pos:]
             self.pos = 0
         return result
@@ -85,7 +86,7 @@ class Lexer(object):
                     return result
             except ValueError:
                 old_len = len(self.buffer)
-                self.buffer += self.f.read(BUFSIZE)
+                self.buffer += self.f.read(self.buf_size)
                 if len(self.buffer) == old_len:
                     raise common.IncompleteJSONError()
 
@@ -179,7 +180,7 @@ def parse_object(lexer):
             symbol = next(lexer)
     yield ('end_map', None)
 
-def basic_parse(file):
+def basic_parse(file=None, buf_size=BUFSIZE):
     '''
     Iterator yielding unprefixed events.
 
@@ -187,7 +188,7 @@ def basic_parse(file):
 
     - file: a readable file-like object with JSON input
     '''
-    lexer = iter(Lexer(file))
+    lexer = iter(Lexer(file, buf_size))
     for value in parse_value(lexer):
         yield value
     try:
