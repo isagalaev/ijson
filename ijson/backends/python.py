@@ -12,7 +12,7 @@ from ijson.compat import chr
 
 BUFSIZE = 16 * 1024
 NONWS = re.compile(r'\S')
-LEXTERM = re.compile(r'[^a-z0-9\.+-]')
+LEXTERM = re.compile(r'[^a-zA-Z0-9\.+-]')
 
 
 class UnexpectedSymbol(common.JSONError):
@@ -137,7 +137,7 @@ def parse_value(lexer, symbol=None):
             yield ('string', ''.join(unescape(symbol[1:-1])))
         else:
             try:
-                number = Decimal(symbol) if '.' in symbol else int(symbol)
+                number = Decimal(symbol) if any(c in symbol for c in '.eE') else int(symbol)
                 yield ('number', number)
             except ValueError:
                 raise UnexpectedSymbol(symbol, lexer)

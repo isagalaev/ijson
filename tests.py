@@ -21,6 +21,7 @@ JSON = b'''
       "integer": 0,
       "double": 0.5,
       "exponent": 1.0e+2,
+      "int_exponent": 1E2,
       "long": 10000000000
     },
     {
@@ -71,6 +72,8 @@ class Parse(object):
                         ('map_key', 'double'),
                         ('number', Decimal('0.5')),
                         ('map_key', 'exponent'),
+                        ('number', Decimal('100')),
+                        ('map_key', 'int_exponent'),
                         ('number', Decimal('100')),
                         ('map_key', 'long'),
                         ('number', 10000000000),
@@ -178,6 +181,7 @@ class Common(unittest.TestCase):
                    'integer': 0,
                    'double': Decimal('0.5'),
                    'exponent': Decimal('100'),
+                   'int_exponent': Decimal('100'),
                    'long': 10000000000,
                 },
                 {
