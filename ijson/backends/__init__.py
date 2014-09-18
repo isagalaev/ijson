@@ -1,9 +1,15 @@
 from ctypes import util, cdll
 
+
 class YAJLImportError(ImportError):
     pass
 
+
 def find_yajl(required):
+    '''
+    Finds and loads yajl shared object of the required major
+    version (1, 2, ...).
+    '''
     so_name = util.find_library('yajl')
     if so_name is None:
         raise YAJLImportError('YAJL shared object not found.')

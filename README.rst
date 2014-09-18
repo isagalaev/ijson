@@ -68,14 +68,13 @@ backends located in ijson/backends:
 You can import a specific backend and use it in the same way as the top level
 library::
 
-    import ijson.backends.python as ijson
+    import ijson.backends.yajl2 as ijson
 
     for item in ijson.items(...):
         # ...
 
-Importing the top level library as ``import ijson`` tries to import all backends
-in order, so it either finds an appropriate version of YAJL or falls back to the
-Python backend if none is found.
+Importing the top level library as ``import ijson`` uses the pure Python
+backend.
 
 
 Acknowledgements
