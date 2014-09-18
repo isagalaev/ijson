@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/isagalaev/ijson.svg?branch=master
+    :target: https://travis-ci.org/isagalaev/ijson
+
 =====
 ijson
 =====
