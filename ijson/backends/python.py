@@ -12,83 +12,65 @@ from ijson.compat import chr
 
 BUFSIZE = 16 * 1024
 NONWS = re.compile(r'\S')
-LEXTERM = re.compile(r'[^a-zA-Z0-9\.+-]')
+LEXTERM = re.compile(r'[\s{}\[\],"]')
 
 
 class UnexpectedSymbol(common.JSONError):
-    def __init__(self, symbol, reader):
-        super(UnexpectedSymbol, self).__init__('Unexpected symbol "%s" at %d' % (symbol[0], reader.pos - len(symbol)))
+    def __init__(self, symbol, pos):
+        super(UnexpectedSymbol, self).__init__('Unexpected symbol %r at %d' % (symbol, pos))
 
-class Lexer(object):
-    '''
-    JSON lexer. Supports iterator interface.
-    '''
-    def __init__(self, f, buf_size=BUFSIZE):
-        self.f = getreader('utf-8')(f)
-        self.buf_size = buf_size
 
-    def __iter__(self):
-        self.buffer = ''
-        self.pos = 0
-        return self
-
-    def __next__(self):
-        while True:
-            match = NONWS.search(self.buffer, self.pos)
-            if match:
-                self.pos = match.start()
-                char = self.buffer[self.pos]
-                if char in '-01234566789fnt':
-                    return self.lexem()
-                elif char == '"':
-                    return self.stringlexem()
-                else:
-                    self.pos += 1
-                    return char
-            self.buffer = self.f.read(self.buf_size)
-            self.pos = 0
-            if not len(self.buffer):
-                raise StopIteration
-    next = __next__
-
-    def lexem(self):
-        current = self.pos
-        while True:
-            match = LEXTERM.search(self.buffer, current)
-            if match:
-                current = match.start()
-                break
+def Lexer(f, buf_size=BUFSIZE):
+    f = getreader('utf-8')(f)
+    buf = ''
+    pos = 0
+    while True:
+        match = NONWS.search(buf, pos)
+        if match:
+            pos = lexemstart = match.start()
+            char = buf[pos]
+            if char in '[]{},':
+                yield lexemstart, char
+                pos += 1
+            elif char == '"':
+                start = pos + 1
+                while True:
+                    try:
+                        end = buf.index('"', start)
+                        escpos = end - 1
+                        while buf[escpos] == '\\':
+                            escpos -= 1
+                        if (end - escpos) % 2 == 0:
+                            start = end + 1
+                        else:
+                            break
+                    except ValueError:
+                        old_len = len(buf)
+                        buf += f.read(buf_size)
+                        if len(buf) == old_len:
+                            raise common.IncompleteJSONError()
+                yield lexemstart, buf[pos:end + 1]
+                pos = end + 1
             else:
-                current = len(self.buffer)
-                self.buffer += self.f.read(self.buf_size)
-                if len(self.buffer) == current:
-                    break
-        result = self.buffer[self.pos:current]
-        self.pos = current
-        if self.pos > self.buf_size:
-            self.buffer = self.buffer[self.pos:]
-            self.pos = 0
-        return result
+                end = pos
+                while True:
+                    match = LEXTERM.search(buf, end)
+                    if match:
+                        end = match.start()
+                        break
+                    else:
+                        end = len(buf)
+                        buf += f.read(buf_size)
+                        if len(buf) == end:
+                            break
+                yield lexemstart, buf[pos:end]
+                pos = end
+        else:
+            buf = f.read(buf_size)
+            pos = 0
+            if not len(buf):
+                break
 
-    def stringlexem(self):
-        start = self.pos + 1
-        while True:
-            try:
-                end = self.buffer.index('"', start)
-                escpos = end - 1
-                while self.buffer[escpos] == '\\':
-                    escpos -= 1
-                if (end - escpos) % 2 == 0:
-                    start = end + 1
-                else:
-                    result = self.buffer[self.pos:end + 1]
-                    self.pos = end + 1
-                    return result
-            except ValueError:
-                old_len = len(self.buffer)
-                self.buffer += self.f.read(self.buf_size)
-                if len(self.buffer) == old_len:
-                    raise common.IncompleteJSONError()
 
 def unescape(s):
     start = 0
@@ -117,10 +99,10 @@ def unescape(s):
             yield esc
         start = pos + 1
 
-def parse_value(lexer, symbol=None):
+def parse_value(lexer, symbol=None, pos=0):
     try:
         if symbol is None:
-            symbol = next(lexer)
+            pos, symbol = next(lexer)
         if symbol == 'null':
             yield ('null', None)
         elif symbol == 'true':
@@ -140,44 +122,44 @@ def parse_value(lexer, symbol=None):
                 number = Decimal(symbol) if any(c in symbol for c in '.eE') else int(symbol)
                 yield ('number', number)
             except ValueError:
-                raise UnexpectedSymbol(symbol, lexer)
+                raise UnexpectedSymbol(symbol, pos)
     except StopIteration:
         raise common.IncompleteJSONError()
 
 def parse_array(lexer):
     yield ('start_array', None)
-    symbol = next(lexer)
+    pos, symbol = next(lexer)
     if symbol != ']':
         while True:
-            for event in parse_value(lexer, symbol):
+            for event in parse_value(lexer, symbol, pos):
                 yield event
-            symbol = next(lexer)
+            pos, symbol = next(lexer)
             if symbol == ']':
                 break
             if symbol != ',':
-                raise UnexpectedSymbol(symbol, lexer)
-            symbol = next(lexer)
+                raise UnexpectedSymbol(symbol, pos)
+            pos, symbol = next(lexer)
     yield ('end_array', None)
 
 def parse_object(lexer):
     yield ('start_map', None)
-    symbol = next(lexer)
+    pos, symbol = next(lexer)
     if symbol != '}':
         while True:
             if symbol[0] != '"':
-                raise UnexpectedSymbol(symbol, lexer)
+                raise UnexpectedSymbol(symbol, pos)
             yield ('map_key', symbol[1:-1])
-            symbol = next(lexer)
+            pos, symbol = next(lexer)
             if symbol != ':':
-                raise UnexpectedSymbol(symbol, lexer)
-            for event in parse_value(lexer):
+                raise UnexpectedSymbol(symbol, pos)
+            for event in parse_value(lexer, None, pos):
                 yield event
-            symbol = next(lexer)
+            pos, symbol = next(lexer)
             if symbol == '}':
                 break
             if symbol != ',':
-                raise UnexpectedSymbol(symbol, lexer)
-            symbol = next(lexer)
+                raise UnexpectedSymbol(symbol, pos)
+            pos, symbol = next(lexer)
     yield ('end_map', None)
 
 def basic_parse(file=None, buf_size=BUFSIZE):
