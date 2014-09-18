@@ -38,7 +38,7 @@ class Lexer(object):
             if match:
                 self.pos = match.start()
                 char = self.buffer[self.pos]
-                if 'a' <= char <= 'z' or '0' <= char <= '9' or char == '-':
+                if char in '-01234566789fnt':
                     return self.lexem()
                 elif char == '"':
                     return self.stringlexem()
