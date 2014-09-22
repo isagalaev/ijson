@@ -11,9 +11,7 @@ from ijson.compat import chr
 
 
 BUFSIZE = 16 * 1024
-NONWS = re.compile(r'\S')
-LEXTERM = re.compile(r'[\s{}\[\],"]')
-
+LEXEME_RE = re.compile(r'[a-z0-9eE\.\+-]+|\S')
 
 class UnexpectedSymbol(common.JSONError):
     def __init__(self, symbol, pos):
@@ -22,17 +20,14 @@ class UnexpectedSymbol(common.JSONError):
 
 def Lexer(f, buf_size=BUFSIZE):
     f = getreader('utf-8')(f)
-    buf = ''
+    buf = f.read(buf_size)
     pos = 0
     while True:
-        match = NONWS.search(buf, pos)
+        match = LEXEME_RE.search(buf, pos)
         if match:
-            pos = lexemstart = match.start()
-            char = buf[pos]
-            if char in '[]{},':
-                yield lexemstart, char
-                pos += 1
-            elif char == '"':
+            lexeme = match.group()
+            if lexeme == '"':
+                pos = match.start()
                 start = pos + 1
                 while True:
                     try:
@@ -45,32 +40,30 @@ def Lexer(f, buf_size=BUFSIZE):
                         else:
                             break
                     except ValueError:
-                        old_len = len(buf)
-                        buf += f.read(buf_size)
-                        if len(buf) == old_len:
+                        data = f.read(buf_size)
+                        if not data:
                             raise common.IncompleteJSONError()
-                yield lexemstart, buf[pos:end + 1]
+                        buf += data
+                yield 0, buf[pos:end + 1]
                 pos = end + 1
+            elif lexeme in '{}[],:':
+                yield 0, lexeme
+                pos = match.end()
             else:
-                end = pos
-                while True:
-                    match = LEXTERM.search(buf, end)
-                    if match:
-                        end = match.start()
+                while match.end() == len(buf):
+                    data = f.read(buf_size)
+                    if not data:
                         break
-                    else:
-                        end = len(buf)
-                        buf += f.read(buf_size)
-                        if len(buf) == end:
-                            break
-                yield lexemstart, buf[pos:end]
-                pos = end
+                    buf += data
+                    match = LEXEME_RE.search(buf, pos)
+                yield 0, match.group()
+                pos = match.end()
         else:
-            buf = f.read(buf_size)
-            pos = 0
-            if not len(buf):
+            data = f.read(buf_size)
+            if not data:
                 break
-
+            buf = data
+            pos = 0
 
 def unescape(s):
     start = 0
