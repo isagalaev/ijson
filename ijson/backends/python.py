@@ -46,9 +46,6 @@ def Lexer(f, buf_size=BUFSIZE):
                         buf += data
                 yield 0, buf[pos:end + 1]
                 pos = end + 1
-            elif lexeme in '{}[],:':
-                yield 0, lexeme
-                pos = match.end()
             else:
                 while match.end() == len(buf):
                     data = f.read(buf_size)
@@ -56,7 +53,8 @@ def Lexer(f, buf_size=BUFSIZE):
                         break
                     buf += data
                     match = LEXEME_RE.search(buf, pos)
-                yield 0, match.group()
+                    lexeme = match.group()
+                yield 0, lexeme
                 pos = match.end()
         else:
             data = f.read(buf_size)
