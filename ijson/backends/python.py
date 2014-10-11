@@ -22,6 +22,7 @@ def Lexer(f, buf_size=BUFSIZE):
     f = getreader('utf-8')(f)
     buf = f.read(buf_size)
     pos = 0
+    discarded = 0
     while True:
         match = LEXEME_RE.search(buf, pos)
         if match:
@@ -44,7 +45,7 @@ def Lexer(f, buf_size=BUFSIZE):
                         if not data:
                             raise common.IncompleteJSONError()
                         buf += data
-                yield 0, buf[pos:end + 1]
+                yield discarded + pos, buf[pos:end + 1]
                 pos = end + 1
             else:
                 while match.end() == len(buf):
@@ -54,12 +55,13 @@ def Lexer(f, buf_size=BUFSIZE):
                     buf += data
                     match = LEXEME_RE.search(buf, pos)
                     lexeme = match.group()
-                yield 0, lexeme
+                yield discarded + match.start(), lexeme
                 pos = match.end()
         else:
             data = f.read(buf_size)
             if not data:
                 break
+            discarded += len(buf)
             buf = data
             pos = 0
 
