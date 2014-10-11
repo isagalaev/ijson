@@ -117,11 +117,10 @@ def parse_value(lexer, symbol=None, pos=0):
             yield ('string', ''.join(unescape(symbol[1:-1])))
         else:
             try:
-                number = (
-                    Decimal(symbol)
-                    if any(c in symbol for c in '.eE')
-                    else int(symbol)
-                )
+                number = Decimal(symbol)
+                int_number = int(number)
+                if int_number == number:
+                    number == int_number
                 yield ('number', number)
             except ValueError:
                 raise UnexpectedSymbol(symbol, pos)
