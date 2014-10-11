@@ -13,9 +13,12 @@ from ijson.compat import chr
 BUFSIZE = 16 * 1024
 LEXEME_RE = re.compile(r'[a-z0-9eE\.\+-]+|\S')
 
+
 class UnexpectedSymbol(common.JSONError):
     def __init__(self, symbol, pos):
-        super(UnexpectedSymbol, self).__init__('Unexpected symbol %r at %d' % (symbol, pos))
+        super(UnexpectedSymbol, self).__init__(
+            'Unexpected symbol %r at %d' % (symbol, pos)
+        )
 
 
 def Lexer(f, buf_size=BUFSIZE):
@@ -65,6 +68,7 @@ def Lexer(f, buf_size=BUFSIZE):
             buf = data
             pos = 0
 
+
 def unescape(s):
     start = 0
     while start < len(s):
@@ -92,6 +96,7 @@ def unescape(s):
             yield esc
         start = pos + 1
 
+
 def parse_value(lexer, symbol=None, pos=0):
     try:
         if symbol is None:
@@ -112,12 +117,17 @@ def parse_value(lexer, symbol=None, pos=0):
             yield ('string', ''.join(unescape(symbol[1:-1])))
         else:
             try:
-                number = Decimal(symbol) if any(c in symbol for c in '.eE') else int(symbol)
+                number = (
+                    Decimal(symbol)
+                    if any(c in symbol for c in '.eE')
+                    else int(symbol)
+                )
                 yield ('number', number)
             except ValueError:
                 raise UnexpectedSymbol(symbol, pos)
     except StopIteration:
         raise common.IncompleteJSONError()
+
 
 def parse_array(lexer):
     yield ('start_array', None)
@@ -133,6 +143,7 @@ def parse_array(lexer):
                 raise UnexpectedSymbol(symbol, pos)
             pos, symbol = next(lexer)
     yield ('end_array', None)
+
 
 def parse_object(lexer):
     yield ('start_map', None)
@@ -155,6 +166,7 @@ def parse_object(lexer):
             pos, symbol = next(lexer)
     yield ('end_map', None)
 
+
 def basic_parse(file=None, buf_size=BUFSIZE):
     '''
     Iterator yielding unprefixed events.
@@ -173,11 +185,13 @@ def basic_parse(file=None, buf_size=BUFSIZE):
     else:
         raise common.JSONError('Additional data')
 
+
 def parse(file):
     '''
     Backend-specific wrapper for ijson.common.parse.
     '''
     return common.parse(basic_parse(file))
+
 
 def items(file, prefix):
     '''
