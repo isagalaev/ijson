@@ -71,30 +71,34 @@ def Lexer(f, buf_size=BUFSIZE):
 
 def unescape(s):
     start = 0
+    result = ''
     while start < len(s):
         pos = s.find('\\', start)
         if pos == -1:
-            yield s[start:]
+            if start == 0:
+                return s
+            result += s[start:]
             break
-        yield s[start:pos]
+        result += s[start:pos]
         pos += 1
         esc = s[pos]
-        if esc == 'b':
-            yield '\b'
-        elif esc == 'f':
-            yield '\f'
-        elif esc == 'n':
-            yield '\n'
-        elif esc == 'r':
-            yield '\r'
-        elif esc == 't':
-            yield '\t'
-        elif esc == 'u':
-            yield chr(int(s[pos + 1:pos + 5], 16))
+        if esc == 'u':
+            result += chr(int(s[pos + 1:pos + 5], 16))
             pos += 4
+        elif esc == 'b':
+            result += '\b'
+        elif esc == 'f':
+            result += '\f'
+        elif esc == 'n':
+            result += '\n'
+        elif esc == 'r':
+            result += '\r'
+        elif esc == 't':
+            result += '\t'
         else:
-            yield esc
+            result += esc
         start = pos + 1
+    return result
 
 
 def parse_value(lexer, symbol=None, pos=0):
@@ -114,7 +118,7 @@ def parse_value(lexer, symbol=None, pos=0):
             for event in parse_object(lexer):
                 yield event
         elif symbol[0] == '"':
-            yield ('string', ''.join(unescape(symbol[1:-1])))
+            yield ('string', unescape(symbol[1:-1]))
         else:
             try:
                 number = Decimal(symbol)
