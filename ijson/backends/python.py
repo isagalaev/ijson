@@ -4,7 +4,7 @@ Pure-python parsing backend.
 from __future__ import unicode_literals
 from decimal import Decimal
 import re
-from codecs import unicode_escape_decode, getreader
+from codecs import getreader
 
 from ijson import common
 from ijson.compat import chr
