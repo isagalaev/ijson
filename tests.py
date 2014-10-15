@@ -169,6 +169,10 @@ class Parse(object):
         events = list(self.backend.basic_parse(BytesIO(JSON), buf_size=buf_size))
         self.assertEqual(events, JSON_EVENTS)
 
+    def test_api(self):
+        self.assertTrue(list(self.backend.items(BytesIO(JSON), '')))
+        self.assertTrue(list(self.backend.parse(BytesIO(JSON))))
+
 # Generating real TestCase classes for each importable backend
 for name in ['python', 'yajl', 'yajl2']:
     try:
