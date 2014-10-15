@@ -15,14 +15,14 @@ JSON = b'''
 {
   "docs": [
     {
-      "string": "\\u0441\\u0442\\u0440\\u043e\\u043a\\u0430 - \xd1\x82\xd0\xb5\xd1\x81\xd1\x82",
       "null": null,
       "boolean": false,
       "integer": 0,
       "double": 0.5,
       "exponent": 1.0e+2,
       "int_exponent": 1E2,
-      "long": 10000000000
+      "long": 10000000000,
+      "string": "\\u0441\\u0442\\u0440\\u043e\\u043a\\u0430 - \xd1\x82\xd0\xb5\xd1\x81\xd1\x82"
     },
     {
       "meta": [[1], {}]
@@ -36,6 +36,52 @@ JSON = b'''
   ]
 }
 '''
+JSON_EVENTS = [
+    ('start_map', None),
+        ('map_key', 'docs'),
+        ('start_array', None),
+            ('start_map', None),
+                ('map_key', 'null'),
+                ('null', None),
+                ('map_key', 'boolean'),
+                ('boolean', False),
+                ('map_key', 'integer'),
+                ('number', 0),
+                ('map_key', 'double'),
+                ('number', Decimal('0.5')),
+                ('map_key', 'exponent'),
+                ('number', 100),
+                ('map_key', 'int_exponent'),
+                ('number', 100),
+                ('map_key', 'long'),
+                ('number', 10000000000),
+                ('map_key', 'string'),
+                ('string', 'строка - тест'),
+            ('end_map', None),
+            ('start_map', None),
+                ('map_key', 'meta'),
+                ('start_array', None),
+                    ('start_array', None),
+                        ('number', 1),
+                    ('end_array', None),
+                    ('start_map', None),
+                    ('end_map', None),
+                ('end_array', None),
+            ('end_map', None),
+            ('start_map', None),
+                ('map_key', 'meta'),
+                ('start_map', None),
+                    ('map_key', 'key'),
+                    ('string', 'value'),
+                ('end_map', None),
+            ('end_map', None),
+            ('start_map', None),
+                ('map_key', 'meta'),
+                ('null', None),
+            ('end_map', None),
+        ('end_array', None),
+    ('end_map', None),
+]
 SCALAR_JSON = b'0'
 EMPTY_JSON = b''
 INVALID_JSON = b'{"key": "value",}'
@@ -56,54 +102,7 @@ class Parse(object):
     '''
     def test_basic_parse(self):
         events = list(self.backend.basic_parse(BytesIO(JSON)))
-        reference = [
-            ('start_map', None),
-                ('map_key', 'docs'),
-                ('start_array', None),
-                    ('start_map', None),
-                        ('map_key', 'string'),
-                        ('string', 'строка - тест'),
-                        ('map_key', 'null'),
-                        ('null', None),
-                        ('map_key', 'boolean'),
-                        ('boolean', False),
-                        ('map_key', 'integer'),
-                        ('number', 0),
-                        ('map_key', 'double'),
-                        ('number', Decimal('0.5')),
-                        ('map_key', 'exponent'),
-                        ('number', 100),
-                        ('map_key', 'int_exponent'),
-                        ('number', 100),
-                        ('map_key', 'long'),
-                        ('number', 10000000000),
-                    ('end_map', None),
-                    ('start_map', None),
-                        ('map_key', 'meta'),
-                        ('start_array', None),
-                            ('start_array', None),
-                                ('number', 1),
-                            ('end_array', None),
-                            ('start_map', None),
-                            ('end_map', None),
-                        ('end_array', None),
-                    ('end_map', None),
-                    ('start_map', None),
-                        ('map_key', 'meta'),
-                        ('start_map', None),
-                            ('map_key', 'key'),
-                            ('string', 'value'),
-                        ('end_map', None),
-                    ('end_map', None),
-                    ('start_map', None),
-                        ('map_key', 'meta'),
-                        ('null', None),
-                    ('end_map', None),
-                ('end_array', None),
-            ('end_map', None),
-        ]
-        for e, r in zip(events, reference):
-            self.assertEqual(e, r)
+        self.assertEqual(events, JSON_EVENTS)
 
     def test_basic_parse_threaded(self):
         thread = threading.Thread(target=self.test_basic_parse)
@@ -148,6 +147,11 @@ class Parse(object):
         # shouldn't fail since iterator is not exhausted
         self.backend.basic_parse(BytesIO(INVALID_JSON))
         self.assertTrue(True)
+
+    def test_boundary_lexeme(self):
+        buf_size = JSON.decode('utf-8').index('false') + 1
+        events = list(self.backend.basic_parse(BytesIO(JSON), buf_size=buf_size))
+        self.assertEqual(events, JSON_EVENTS)
 
 # Generating real TestCase classes for each importable backend
 for name in ['python', 'yajl', 'yajl2']:
