@@ -91,7 +91,8 @@ STRINGS_JSON = br'''
     "str1": "",
     "str2": "\"",
     "str3": "\\",
-    "str4": "\\\\"
+    "str4": "\\\\",
+    "special": "\b\f\n\r\t"
 }
 '''
 
@@ -116,7 +117,7 @@ class Parse(object):
     def test_strings(self):
         events = list(self.backend.basic_parse(BytesIO(STRINGS_JSON)))
         strings = [value for event, value in events if event == 'string']
-        self.assertEqual(strings, ['', '"', '\\', '\\\\'])
+        self.assertEqual(strings, ['', '"', '\\', '\\\\', '\b\f\n\r\t'])
 
     def test_empty(self):
         self.assertRaises(
