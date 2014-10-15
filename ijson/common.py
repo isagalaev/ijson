@@ -8,13 +8,6 @@ class JSONError(Exception):
     '''
     pass
 
-class IncompleteJSONError(JSONError):
-    '''
-    Raised when the parser expects data and it's not available. May be
-    caused by malformed syntax or a broken source stream.
-    '''
-    def __init__(self):
-        super(IncompleteJSONError, self).__init__('Incomplete or empty JSON data')
 
 def parse(basic_events):
     '''

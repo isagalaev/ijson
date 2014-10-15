@@ -46,7 +46,7 @@ def Lexer(f, buf_size=BUFSIZE):
                     except ValueError:
                         data = f.read(buf_size)
                         if not data:
-                            raise common.IncompleteJSONError()
+                            raise common.JSONError('Incomplete string lexeme')
                         buf += data
                 yield discarded + pos, buf[pos:end + 1]
                 pos = end + 1
@@ -129,7 +129,7 @@ def parse_value(lexer, symbol=None, pos=0):
             except decimal.InvalidOperation:
                 raise UnexpectedSymbol(symbol, pos)
     except StopIteration:
-        raise common.IncompleteJSONError()
+        raise common.JSONError('Incomplete JSON data')
 
 
 def parse_array(lexer):

@@ -131,20 +131,16 @@ class Parse(object):
         self.assertEqual(strings, ['', '"', '\\', '\\\\', '\b\f\n\r\t'])
 
     def test_empty(self):
-        self.assertRaises(
-            common.IncompleteJSONError,
-            lambda: list(self.backend.basic_parse(BytesIO(EMPTY_JSON))),
-        )
+        with self.assertRaises(common.JSONError):
+            list(self.backend.basic_parse(BytesIO(EMPTY_JSON)))
 
     def test_incomplete(self):
-        self.assertRaises(
-            common.IncompleteJSONError,
-            lambda: list(self.backend.basic_parse(BytesIO(INCOMPLETE_JSON))),
-        )
+        with self.assertRaises(common.JSONError):
+            list(self.backend.basic_parse(BytesIO(INCOMPLETE_JSON)))
 
     def test_invalid(self):
         for json in INVALID_JSONS:
-            with self.assertRaises(common.JSONError):
+            with self.assertRaises(common.JSONError) as cm:
                 list(self.backend.basic_parse(BytesIO(json)))
 
     def test_utf8_split(self):
