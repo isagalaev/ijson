@@ -87,7 +87,15 @@ JSON_EVENTS = [
 ]
 SCALAR_JSON = b'0'
 EMPTY_JSON = b''
-INVALID_JSON = b'{"key": "value",}'
+INVALID_JSONS = [
+    b'["key", "value",]',      # trailing comma
+    b'["key"  "value"]',       # no comma
+    b'{"key": "value",}',      # trailing comma
+    b'{"key": "value" "key"}', # no comma
+    b'{"key"  "value"}',       # no colon
+    b'invalid',                # unknown lexeme
+    b'[1, 2] // comment'       # dangling junk
+]
 INCOMPLETE_JSON = b'"test'
 STRINGS_JSON = br'''
 {
@@ -135,10 +143,9 @@ class Parse(object):
         )
 
     def test_invalid(self):
-        self.assertRaises(
-            common.JSONError,
-            lambda: list(self.backend.basic_parse(BytesIO(INVALID_JSON))),
-        )
+        for json in INVALID_JSONS:
+            with self.assertRaises(common.JSONError):
+                list(self.backend.basic_parse(BytesIO(json)))
 
     def test_utf8_split(self):
         buf_size = JSON.index(b'\xd1') + 1
@@ -149,7 +156,7 @@ class Parse(object):
 
     def test_lazy(self):
         # shouldn't fail since iterator is not exhausted
-        self.backend.basic_parse(BytesIO(INVALID_JSON))
+        self.backend.basic_parse(BytesIO(INVALID_JSONS[0]))
         self.assertTrue(True)
 
     def test_boundary_lexeme(self):

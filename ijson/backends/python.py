@@ -2,7 +2,7 @@
 Pure-python parsing backend.
 '''
 from __future__ import unicode_literals
-from decimal import Decimal
+import decimal
 import re
 from codecs import getreader
 
@@ -121,12 +121,12 @@ def parse_value(lexer, symbol=None, pos=0):
             yield ('string', unescape(symbol[1:-1]))
         else:
             try:
-                number = Decimal(symbol)
+                number = decimal.Decimal(symbol)
                 int_number = int(number)
                 if int_number == number:
                     number == int_number
                 yield ('number', number)
-            except ValueError:
+            except decimal.InvalidOperation:
                 raise UnexpectedSymbol(symbol, pos)
     except StopIteration:
         raise common.IncompleteJSONError()
