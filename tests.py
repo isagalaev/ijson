@@ -149,7 +149,12 @@ class Parse(object):
         self.assertTrue(True)
 
     def test_boundary_lexeme(self):
-        buf_size = JSON.decode('utf-8').index('false') + 1
+        buf_size = JSON.index(b'false') + 1
+        events = list(self.backend.basic_parse(BytesIO(JSON), buf_size=buf_size))
+        self.assertEqual(events, JSON_EVENTS)
+
+    def test_boundary_whitespace(self):
+        buf_size = JSON.index(b'   ') + 1
         events = list(self.backend.basic_parse(BytesIO(JSON), buf_size=buf_size))
         self.assertEqual(events, JSON_EVENTS)
 
