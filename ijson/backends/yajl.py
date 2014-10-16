@@ -103,7 +103,7 @@ def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
                 raise common.JSONError(error)
             if not buffer and not events:
                 if result == YAJL_INSUFFICIENT_DATA:
-                    raise common.IncompleteJSONError()
+                    raise common.JSONError('YAJL_INSUFFICIENT_DATA')
                 break
 
             for event in events:
