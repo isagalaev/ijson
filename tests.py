@@ -94,8 +94,9 @@ INVALID_JSONS = [
     b'{"key": "value" "key"}', # no comma
     b'{"key"  "value"}',       # no colon
     b'invalid',                # unknown lexeme
-    b'[1, 2] // comment'       # dangling junk
+    b'[1, 2] dangling junk'    # dangling junk
 ]
+YAJL1_PASSING_INVALID = INVALID_JSONS[6]
 INCOMPLETE_JSON = b'"test'
 STRINGS_JSON = br'''
 {
@@ -140,6 +141,10 @@ class Parse(object):
 
     def test_invalid(self):
         for json in INVALID_JSONS:
+            # Yajl1 doesn't complain about additional data after the end
+            # of a parsed object. Skipping this test.
+            if self.__class__.__name__ == 'YajlParse' and json == YAJL1_PASSING_INVALID:
+                continue
             with self.assertRaises(common.JSONError) as cm:
                 list(self.backend.basic_parse(BytesIO(json)))
 
