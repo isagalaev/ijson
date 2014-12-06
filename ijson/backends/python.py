@@ -121,11 +121,7 @@ def parse_value(lexer, symbol=None, pos=0):
             yield ('string', unescape(symbol[1:-1]))
         else:
             try:
-                number = decimal.Decimal(symbol)
-                int_number = int(number)
-                if int_number == number:
-                    number = int_number
-                yield ('number', number)
+                yield ('number', common.number(symbol))
             except decimal.InvalidOperation:
                 raise UnexpectedSymbol(symbol, pos)
     except StopIteration:

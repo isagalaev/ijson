@@ -21,7 +21,6 @@ JSON = b'''
       "integer": 0,
       "double": 0.5,
       "exponent": 1.0e+2,
-      "int_exponent": 1E2,
       "long": 10000000000,
       "string": "\\u0441\\u0442\\u0440\\u043e\\u043a\\u0430 - \xd1\x82\xd0\xb5\xd1\x81\xd1\x82"
     },
@@ -53,8 +52,6 @@ JSON_EVENTS = [
                 ('map_key', 'double'),
                 ('number', Decimal('0.5')),
                 ('map_key', 'exponent'),
-                ('number', 100),
-                ('map_key', 'int_exponent'),
                 ('number', 100),
                 ('map_key', 'long'),
                 ('number', 10000000000),
@@ -107,6 +104,7 @@ STRINGS_JSON = br'''
     "special": "\b\f\n\r\t"
 }
 '''
+INT_NUMBERS_JSON = b'[1, 1.0, 1E2]'
 
 class Parse(object):
     '''
@@ -130,6 +128,11 @@ class Parse(object):
         events = list(self.backend.basic_parse(BytesIO(STRINGS_JSON)))
         strings = [value for event, value in events if event == 'string']
         self.assertEqual(strings, ['', '"', '\\', '\\\\', '\b\f\n\r\t'])
+
+    def test_int_numbers(self):
+        events = list(self.backend.basic_parse(BytesIO(INT_NUMBERS_JSON)))
+        numbers = [value for event, value in events if event == 'number']
+        self.assertTrue(all(type(n) is int  for n in numbers))
 
     def test_empty(self):
         with self.assertRaises(common.JSONError):
@@ -207,7 +210,6 @@ class Common(unittest.TestCase):
                    'integer': 0,
                    'double': Decimal('0.5'),
                    'exponent': 100,
-                   'int_exponent': 100,
                    'long': 10000000000,
                 },
                 {

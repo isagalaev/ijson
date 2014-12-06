@@ -23,16 +23,6 @@ C_DOUBLE = CFUNCTYPE(c_int, c_void_p, c_double)
 C_STR = CFUNCTYPE(c_int, c_void_p, POINTER(c_ubyte), c_uint)
 
 
-def number(value):
-    '''
-    Helper function casting a string that represents any Javascript number
-    into appropriate Python value: either int or Decimal.
-    '''
-    try:
-        return int(value)
-    except ValueError:
-        return Decimal(value)
-
 _callback_data = [
     # Mapping of JSON parser events to callback C types and value converters.
     # Used to define the Callbacks structure and actual callback functions
@@ -43,7 +33,7 @@ _callback_data = [
     # takes precedence if defined
     ('integer', C_LONG, lambda v, l: int(string_at(v, l))),
     ('double', C_DOUBLE, lambda v, l: float(string_at(v, l))),
-    ('number', C_STR, lambda v, l: number(b2s(string_at(v, l)))),
+    ('number', C_STR, lambda v, l: common.number(b2s(string_at(v, l)))),
     ('string', C_STR, lambda v, l: string_at(v, l).decode('utf-8')),
     ('start_map', C_EMPTY, lambda: None),
     ('map_key', C_STR, lambda v, l: b2s(string_at(v, l))),

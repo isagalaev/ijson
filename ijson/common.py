@@ -1,6 +1,8 @@
 '''
 Backend independent higher level interfaces, common exceptions.
 '''
+import decimal
+
 
 class JSONError(Exception):
     '''
@@ -139,3 +141,15 @@ def items(prefixed_events, prefix):
                     yield value
     except StopIteration:
         pass
+
+
+def number(str_value):
+    '''
+    Converts string with a numeric value into an int or a Decimal.
+    Used in different backends for consistent number representation.
+    '''
+    number = decimal.Decimal(str_value)
+    int_number = int(number)
+    if int_number == number:
+        number = int_number
+    return number
