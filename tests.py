@@ -1,13 +1,13 @@
 # -*- coding:utf-8 -*-
 from __future__ import unicode_literals
 import unittest
-from io import BytesIO
+from io import BytesIO, StringIO
 from decimal import Decimal
 import threading
 from importlib import import_module
 
 from ijson import common
-from ijson.backends.python import basic_parse
+from ijson.backends.python import basic_parse, Lexer
 from ijson.compat import IS_PY2
 
 
@@ -106,6 +106,7 @@ STRINGS_JSON = br'''
 '''
 INT_NUMBERS_JSON = b'[1, 1.0, 1E2]'
 
+
 class Parse(object):
     '''
     Base class for parsing tests that is used to create test cases for each
@@ -191,6 +192,7 @@ for name in ['python', 'yajl', 'yajl2']:
     except ImportError:
         pass
 
+
 class Common(unittest.TestCase):
     '''
     Backend independent tests. They all use basic_parse imported explicitly from
@@ -246,6 +248,16 @@ class Common(unittest.TestCase):
             {'key': 'value'},
             None,
         ])
+
+
+class Stream(unittest.TestCase):
+    def test_bytes(self):
+        l = Lexer(BytesIO(JSON))
+        self.assertEqual(next(l)[1], '{')
+
+    def test_string(self):
+        l = Lexer(StringIO(JSON.decode('utf-8')))
+        self.assertEqual(next(l)[1], '{')
 
 
 if __name__ == '__main__':

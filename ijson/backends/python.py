@@ -7,7 +7,7 @@ import re
 from codecs import getreader
 
 from ijson import common
-from ijson.compat import chr
+from ijson.compat import chr, bytetype
 
 
 BUFSIZE = 16 * 1024
@@ -22,7 +22,8 @@ class UnexpectedSymbol(common.JSONError):
 
 
 def Lexer(f, buf_size=BUFSIZE):
-    f = getreader('utf-8')(f)
+    if type(f.read(0)) == bytetype:
+        f = getreader('utf-8')(f)
     buf = f.read(buf_size)
     pos = 0
     discarded = 0
