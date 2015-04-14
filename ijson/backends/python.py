@@ -166,7 +166,7 @@ def parse_object(lexer):
     yield ('end_map', None)
 
 
-def basic_parse(file=None, buf_size=BUFSIZE):
+def basic_parse(file, buf_size=BUFSIZE):
     '''
     Iterator yielding unprefixed events.
 
