@@ -185,11 +185,11 @@ def basic_parse(file=None, buf_size=BUFSIZE):
         raise common.JSONError('Additional data')
 
 
-def parse(file):
+def parse(file, buf_size=BUFSIZE):
     '''
     Backend-specific wrapper for ijson.common.parse.
     '''
-    return common.parse(basic_parse(file))
+    return common.parse(basic_parse(file, buf_size=buf_size))
 
 
 def items(file, prefix):
