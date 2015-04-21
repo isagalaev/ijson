@@ -96,10 +96,14 @@ YAJL1_PASSING_INVALID = INVALID_JSONS[6]
 INCOMPLETE_JSONS = [
     b'',
     b'"test',
+    b'[',
     b'[1',
     b'[1,',
+    b'{',
     b'{"key"',
     b'{"key":',
+    b'{"key": "value"',
+    b'{"key": "value",',
 ]
 STRINGS_JSON = br'''
 {
