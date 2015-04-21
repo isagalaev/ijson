@@ -92,7 +92,8 @@ def basic_parse(f, allow_comments=False, buf_size=64 * 1024,
                 perror = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
                 error = cast(perror, c_char_p).value
                 yajl.yajl_free_error(handle, perror)
-                raise common.JSONError(error.decode('utf-8'))
+                exception = common.IncompleteJSONError if result == YAJL_INSUFFICIENT_DATA else common.JSONError
+                raise exception(error.decode('utf-8'))
             if not buffer and not events:
                 break
 

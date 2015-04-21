@@ -11,6 +11,13 @@ class JSONError(Exception):
     pass
 
 
+class IncompleteJSONError(JSONError):
+    '''
+    Raised when the parser can't read expected data from a stream.
+    '''
+    pass
+
+
 def parse(basic_events):
     '''
     An iterator returning parsing events with the information about their location

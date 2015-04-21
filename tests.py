@@ -83,7 +83,6 @@ JSON_EVENTS = [
     ('end_map', None),
 ]
 SCALAR_JSON = b'0'
-EMPTY_JSON = b''
 INVALID_JSONS = [
     b'["key", "value",]',      # trailing comma
     b'["key"  "value"]',       # no comma
@@ -94,7 +93,14 @@ INVALID_JSONS = [
     b'[1, 2] dangling junk'    # dangling junk
 ]
 YAJL1_PASSING_INVALID = INVALID_JSONS[6]
-INCOMPLETE_JSON = b'"test'
+INCOMPLETE_JSONS = [
+    b'',
+    b'"test',
+    b'[1',
+    b'[1,',
+    b'{"key"',
+    b'{"key":',
+]
 STRINGS_JSON = br'''
 {
     "str1": "",
@@ -135,14 +141,6 @@ class Parse(object):
         numbers = [value for event, value in events if event == 'number']
         self.assertTrue(all(type(n) is int  for n in numbers))
 
-    def test_empty(self):
-        with self.assertRaises(common.JSONError):
-            list(self.backend.basic_parse(BytesIO(EMPTY_JSON)))
-
-    def test_incomplete(self):
-        with self.assertRaises(common.JSONError):
-            list(self.backend.basic_parse(BytesIO(INCOMPLETE_JSON)))
-
     def test_invalid(self):
         for json in INVALID_JSONS:
             # Yajl1 doesn't complain about additional data after the end
@@ -150,6 +148,11 @@ class Parse(object):
             if self.__class__.__name__ == 'YajlParse' and json == YAJL1_PASSING_INVALID:
                 continue
             with self.assertRaises(common.JSONError) as cm:
+                list(self.backend.basic_parse(BytesIO(json)))
+
+    def test_incomplete(self):
+        for json in INCOMPLETE_JSONS:
+            with self.assertRaises(common.IncompleteJSONError):
                 list(self.backend.basic_parse(BytesIO(json)))
 
     def test_utf8_split(self):

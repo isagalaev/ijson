@@ -47,7 +47,7 @@ def Lexer(f, buf_size=BUFSIZE):
                     except ValueError:
                         data = f.read(buf_size)
                         if not data:
-                            raise common.JSONError('Incomplete string lexeme')
+                            raise common.IncompleteJSONError('Incomplete string lexeme')
                         buf += data
                 yield discarded + pos, buf[pos:end + 1]
                 pos = end + 1
@@ -126,45 +126,51 @@ def parse_value(lexer, symbol=None, pos=0):
             except decimal.InvalidOperation:
                 raise UnexpectedSymbol(symbol, pos)
     except StopIteration:
-        raise common.JSONError('Incomplete JSON data')
+        raise common.IncompleteJSONError('Incomplete JSON data')
 
 
 def parse_array(lexer):
     yield ('start_array', None)
-    pos, symbol = next(lexer)
-    if symbol != ']':
-        while True:
-            for event in parse_value(lexer, symbol, pos):
-                yield event
-            pos, symbol = next(lexer)
-            if symbol == ']':
-                break
-            if symbol != ',':
-                raise UnexpectedSymbol(symbol, pos)
-            pos, symbol = next(lexer)
-    yield ('end_array', None)
+    try:
+        pos, symbol = next(lexer)
+        if symbol != ']':
+            while True:
+                for event in parse_value(lexer, symbol, pos):
+                    yield event
+                pos, symbol = next(lexer)
+                if symbol == ']':
+                    break
+                if symbol != ',':
+                    raise UnexpectedSymbol(symbol, pos)
+                pos, symbol = next(lexer)
+        yield ('end_array', None)
+    except StopIteration:
+        raise common.IncompleteJSONError('Incomplete JSON data')
 
 
 def parse_object(lexer):
     yield ('start_map', None)
-    pos, symbol = next(lexer)
-    if symbol != '}':
-        while True:
-            if symbol[0] != '"':
-                raise UnexpectedSymbol(symbol, pos)
-            yield ('map_key', symbol[1:-1])
-            pos, symbol = next(lexer)
-            if symbol != ':':
-                raise UnexpectedSymbol(symbol, pos)
-            for event in parse_value(lexer, None, pos):
-                yield event
-            pos, symbol = next(lexer)
-            if symbol == '}':
-                break
-            if symbol != ',':
-                raise UnexpectedSymbol(symbol, pos)
-            pos, symbol = next(lexer)
-    yield ('end_map', None)
+    try:
+        pos, symbol = next(lexer)
+        if symbol != '}':
+            while True:
+                if symbol[0] != '"':
+                    raise UnexpectedSymbol(symbol, pos)
+                yield ('map_key', symbol[1:-1])
+                pos, symbol = next(lexer)
+                if symbol != ':':
+                    raise UnexpectedSymbol(symbol, pos)
+                for event in parse_value(lexer, None, pos):
+                    yield event
+                pos, symbol = next(lexer)
+                if symbol == '}':
+                    break
+                if symbol != ',':
+                    raise UnexpectedSymbol(symbol, pos)
+                pos, symbol = next(lexer)
+        yield ('end_map', None)
+    except StopIteration:
+        raise common.IncompleteJSONError('Incomplete JSON data')
 
 
 def basic_parse(file, buf_size=BUFSIZE):
