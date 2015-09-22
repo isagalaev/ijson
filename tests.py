@@ -149,7 +149,7 @@ class Parse(object):
         for json in INVALID_JSONS:
             # Yajl1 doesn't complain about additional data after the end
             # of a parsed object. Skipping this test.
-            if self.__class__.__name__.endswith('YajlParse') and json == YAJL1_PASSING_INVALID:
+            if self.__class__.__name__ == 'YajlParse' and json == YAJL1_PASSING_INVALID:
                 continue
             with self.assertRaises(common.JSONError) as cm:
                 list(self.backend.basic_parse(BytesIO(json)))
@@ -188,7 +188,7 @@ class Parse(object):
 # Generating real TestCase classes for each importable backend
 for name in ['python', 'yajl', 'yajl2', 'yajl2_cffi']:
     try:
-        classname = '%sParse' % ''.join(p.capitalize() for p in name.split('.'))
+        classname = '%sParse' % ''.join(p.capitalize() for p in name.split('_'))
         if IS_PY2:
             classname = classname.encode('ascii')
 
