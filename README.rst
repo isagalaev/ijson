@@ -64,14 +64,17 @@ Backends
 Ijson provides several implementations of the actual parsing in the form of
 backends located in ijson/backends:
 
-- ``yajl2``: wrapper around `YAJL <http://lloyd.github.com/yajl/>`_ version 2.x
-- ``yajl``: wrapper around `YAJL <http://lloyd.github.com/yajl/>`_ version 1.x
-- ``python``: pure Python parser (good to use under PyPy)
+- ``yajl2_cffi``: wrapper around `YAJL <http://lloyd.github.com/yajl/>`_ 2.x
+  using CFFI, this is the fastest.
+- ``yajl2``: wrapper around YAJL 2.x using ctypes, for when you can't use CFFI
+  for some reason.
+- ``yajl``: deprecated YAJL 1.x + ctypes wrapper, for even older systems.
+- ``python``: pure Python parser, good to use with PyPy
 
 You can import a specific backend and use it in the same way as the top level
 library::
 
-    import ijson.backends.yajl2 as ijson
+    import ijson.backends.yajl2_cffi as ijson
 
     for item in ijson.items(...):
         # ...
