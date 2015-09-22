@@ -2,10 +2,8 @@
 Wrapper for YAJL C library version 2.x.
 '''
 
-from ctypes import Structure, c_uint, c_ubyte, c_int, c_long, c_double, \
-                   c_void_p, c_char_p, CFUNCTYPE, POINTER, byref, string_at, cast , \
-                   cdll, util, c_char
-from decimal import Decimal
+from ctypes import Structure, c_uint, c_ubyte, c_int, c_long, c_double, c_char, \
+                   c_void_p, c_char_p, CFUNCTYPE, POINTER, byref, string_at, cast
 
 from ijson import common, backends
 from ijson.compat import b2s
