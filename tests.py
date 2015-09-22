@@ -186,8 +186,7 @@ class Parse(object):
         self.assertTrue(list(self.backend.parse(BytesIO(JSON))))
 
 # Generating real TestCase classes for each importable backend
-for name in ['python', 'yajl.cffi.yajl','yajl.ctypes.yajl',
-             'yajl.cffi.yajl2', 'yajl.ctypes.yajl2']:
+for name in ['python', 'yajl', 'yajl2', 'yajl2_cffi']:
     try:
         classname = '%sParse' % ''.join(p.capitalize() for p in name.split('.'))
         if IS_PY2:

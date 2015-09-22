@@ -1,5 +1,5 @@
 '''
-Wrapper for YAJL C library version 2.x.
+Wrapper for YAJL C library version 1.x.
 '''
 
 from ctypes import Structure, c_uint, c_ubyte, c_int, c_long, c_double, \
@@ -11,7 +11,7 @@ from ijson import common, backends
 from ijson.compat import b2s
 
 
-yajl = backends.find_yajl_ctypes(2)
+yajl = backends.find_yajl_ctypes(1)
 
 yajl.yajl_alloc.restype = POINTER(c_char)
 yajl.yajl_get_error.restype = POINTER(c_char)
@@ -45,18 +45,19 @@ _callback_data = [
 class Callbacks(Structure):
     _fields_ = [(name, type) for name, type, func in _callback_data]
 
+class Config(Structure):
+    _fields_ = [
+        ("allowComments", c_uint),
+        ("checkUTF8", c_uint)
+    ]
+
 YAJL_OK = 0
 YAJL_CANCELLED = 1
 YAJL_INSUFFICIENT_DATA = 2
 YAJL_ERROR = 3
 
-# constants defined in yajl_parse.h
-YAJL_ALLOW_COMMENTS = 1
-YAJL_MULTIPLE_VALUES = 8
 
-
-def basic_parse(f, allow_comments=False, buf_size=64 * 1024,
-                multiple_values=False):
+def basic_parse(f, allow_comments=False, check_utf8=False, buf_size=64 * 1024):
     '''
     Iterator yielding unprefixed events.
 
@@ -64,8 +65,8 @@ def basic_parse(f, allow_comments=False, buf_size=64 * 1024,
 
     - f: a readable file-like object with JSON input
     - allow_comments: tells parser to allow comments in JSON input
+    - check_utf8: if True, parser will cause an error if input is invalid utf-8
     - buf_size: a size of an input buffer
-    - multiple_values: allows the parser to parse multiple JSON objects
     '''
     events = []
 
@@ -76,25 +77,24 @@ def basic_parse(f, allow_comments=False, buf_size=64 * 1024,
         return func_type(c_callback)
 
     callbacks = Callbacks(*[callback(*data) for data in _callback_data])
-    handle = yajl.yajl_alloc(byref(callbacks), None, None)
-    if allow_comments:
-        yajl.yajl_config(handle, YAJL_ALLOW_COMMENTS, 1)
-    if multiple_values:
-        yajl.yajl_config(handle, YAJL_MULTIPLE_VALUES, 1)
+    config = Config(allow_comments, check_utf8)
+    handle = yajl.yajl_alloc(byref(callbacks), byref(config), None, None)
     try:
         while True:
             buffer = f.read(buf_size)
             if buffer:
                 result = yajl.yajl_parse(handle, buffer, len(buffer))
             else:
-                result = yajl.yajl_complete_parse(handle)
-            if result != YAJL_OK:
+                result = yajl.yajl_parse_complete(handle)
+            if result == YAJL_ERROR:
                 perror = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
                 error = cast(perror, c_char_p).value
                 yajl.yajl_free_error(handle, perror)
                 exception = common.IncompleteJSONError if result == YAJL_INSUFFICIENT_DATA else common.JSONError
-                raise exception(error.decode('utf-8'))
+                raise common.JSONError(error)
             if not buffer and not events:
+                if result == YAJL_INSUFFICIENT_DATA:
+                    raise common.IncompleteJSONError('Incomplete JSON data')
                 break
 
             for event in events:

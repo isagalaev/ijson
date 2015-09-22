@@ -1,22 +1,20 @@
 '''
-CFFI-Wrapper for YAJL C library version 1.x.
+CFFI-Wrapper for YAJL C library version 2.x.
 '''
 
 from cffi import FFI
 import functools
 import sys
 
-import ijson.backends.yajl.common
-from ijson.backends.yajl.cffi import require_version
-from ijson import common
+from ijson import common, backends
 from ijson.compat import b2s
+
 
 ffi = FFI()
 ffi.cdef("""
-typedef void * (*yajl_malloc_func)(void *ctx, unsigned int sz);
+typedef void * (*yajl_malloc_func)(void *ctx, size_t sz);
 typedef void (*yajl_free_func)(void *ctx, void * ptr);
-typedef void * (*yajl_realloc_func)(void *ctx, void * ptr, unsigned int sz);
-
+typedef void * (*yajl_realloc_func)(void *ctx, void * ptr, size_t sz);
 typedef struct
 {
     yajl_malloc_func malloc;
@@ -24,72 +22,56 @@ typedef struct
     yajl_free_func free;
     void * ctx;
 } yajl_alloc_funcs;
-
 typedef struct yajl_handle_t * yajl_handle;
-
 typedef enum {
     yajl_status_ok,
     yajl_status_client_canceled,
     yajl_status_error
 } yajl_status;
-
+typedef enum {
+    yajl_allow_comments = 0x01,
+    yajl_dont_validate_strings     = 0x02,
+    yajl_allow_trailing_garbage = 0x04,
+    yajl_allow_multiple_values = 0x08,
+    yajl_allow_partial_values = 0x10
+} yajl_option;
 typedef struct {
     int (* yajl_null)(void * ctx);
     int (* yajl_boolean)(void * ctx, int boolVal);
-    int (* yajl_integer)(void * ctx, long integerVal);
+    int (* yajl_integer)(void * ctx, long long integerVal);
     int (* yajl_double)(void * ctx, double doubleVal);
     int (* yajl_number)(void * ctx, const char * numberVal,
-                        unsigned int numberLen);
+                        size_t numberLen);
     int (* yajl_string)(void * ctx, const unsigned char * stringVal,
-                        unsigned int stringLen);
+                        size_t stringLen);
     int (* yajl_start_map)(void * ctx);
     int (* yajl_map_key)(void * ctx, const unsigned char * key,
-                         unsigned int stringLen);
+                         size_t stringLen);
     int (* yajl_end_map)(void * ctx);
     int (* yajl_start_array)(void * ctx);
     int (* yajl_end_array)(void * ctx);
 } yajl_callbacks;
-
-typedef struct {
-    unsigned int allowComments;
-    unsigned int checkUTF8;
-} yajl_parser_config;
-
-yajl_handle yajl_alloc(const yajl_callbacks * callbacks,
-                       const yajl_parser_config * config,
-                       const yajl_alloc_funcs * allocFuncs,
-                       void * ctx);
-
-void yajl_free(yajl_handle handle);
-
-yajl_status yajl_parse(yajl_handle hand,
-                       const unsigned char * jsonText,
-                       unsigned int jsonTextLength);
-
-yajl_status yajl_parse_complete(yajl_handle hand);
-
-unsigned char * yajl_get_error(yajl_handle hand, int verbose,
-                               const unsigned char * jsonText,
-                               unsigned int jsonTextLength);
-
-void yajl_free_error(yajl_handle hand, unsigned char * str);
-
 int yajl_version(void);
+yajl_handle yajl_alloc(const yajl_callbacks *callbacks, yajl_alloc_funcs *afs, void *ctx);
+int yajl_config(yajl_handle h, yajl_option opt, ...);
+yajl_status yajl_parse(yajl_handle hand, const unsigned char *jsonText, size_t jsonTextLength);
+yajl_status yajl_complete_parse(yajl_handle hand);
+unsigned char* yajl_get_error(yajl_handle hand, int verbose, const unsigned char *jsonText, size_t jsonTextLength);
+void yajl_free_error(yajl_handle hand, unsigned char * str);
+void yajl_free(yajl_handle handle);
 """)
 
 
-try:
-    yajl = ffi.dlopen('yajl')
-except OSError:
-    raise ImportError('Unable to load yajl')
-# raises YAJLImportError if the version doesn't not match
-require_version(yajl.yajl_version(), 1)
-
+yajl = backends.find_yajl_cffi(ffi, 2)
 
 YAJL_OK = 0
 YAJL_CANCELLED = 1
 YAJL_INSUFFICIENT_DATA = 2
 YAJL_ERROR = 3
+
+# constants defined in yajl_parse.h
+YAJL_ALLOW_COMMENTS = 1
+YAJL_MULTIPLE_VALUES = 8
 
 
 def append_event_to_ctx(event):
@@ -116,7 +98,7 @@ def boolean(val):
     return bool(val)
 
 
-@ffi.callback('int(void *ctx, long integerVal)')
+@ffi.callback('int(void *ctx, long long integerVal)')
 @append_event_to_ctx('integer')
 def integer(val):
     return int(val)
@@ -128,13 +110,13 @@ def double(val):
     return float(val)
 
 
-@ffi.callback('int(void *ctx, const char *numberVal, unsigned int numberLen)')
+@ffi.callback('int(void *ctx, const char *numberVal, size_t numberLen)')
 @append_event_to_ctx('number')
 def number(val, length):
     return common.number(b2s(ffi.string(val, maxlen=length)))
 
 
-@ffi.callback('int(void *ctx, const unsigned char *stringVal, unsigned int stringLen)')
+@ffi.callback('int(void *ctx, const unsigned char *stringVal, size_t stringLen)')
 @append_event_to_ctx('string')
 def string(val, length):
     return ffi.string(val, maxlen=length).decode('utf-8')
@@ -146,7 +128,7 @@ def start_map():
     return None
 
 
-@ffi.callback('int(void *ctx, const unsigned char *key, unsigned int stringLen)')
+@ffi.callback('int(void *ctx, const unsigned char *key, size_t stringLen)')
 @append_event_to_ctx('map_key')
 def map_key(key, length):
     return b2s(ffi.string(key, maxlen=length))
@@ -178,12 +160,17 @@ _callback_data = (
 )
 
 
-def yajl_init(scope, events, allow_comments=False, check_utf8=False):
+_asd = list()
+def yajl_init(scope, events, allow_comments=False, multiple_values=False):
     scope.ctx = ffi.new_handle(events)
     scope.callbacks = ffi.new('yajl_callbacks*', _callback_data)
-    config = ffi.new('yajl_parser_config*', (allow_comments, check_utf8))
+    handle = yajl.yajl_alloc(scope.callbacks, ffi.NULL, scope.ctx)
 
-    handle = yajl.yajl_alloc(scope.callbacks, config, ffi.NULL, scope.ctx)
+    if allow_comments:
+        yajl.yajl_config(handle, YAJL_ALLOW_COMMENTS, 1)
+    if multiple_values:
+        yajl.yajl_config(handle, YAJL_MULTIPLE_VALUES, 1)
+
     return handle
 
 
@@ -191,7 +178,7 @@ def yajl_parse(handle, buffer):
     if buffer:
         result = yajl.yajl_parse(handle, buffer, len(buffer))
     else:
-        result = yajl.yajl_parse_complete(handle)
+        result = yajl.yajl_complete_parse(handle)
 
     if result != YAJL_OK:
         perror = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
@@ -201,22 +188,56 @@ def yajl_parse(handle, buffer):
         raise exception(error)
 
 
-def yajl_free(handle):
-    yajl.yajl_free(handle)
+class Container(object):
+    pass
 
 
-def basic_parse(f, buf_size=64*1024, allow_comments=False, check_utf8=False):
-    _yajl = sys.modules[__name__]
-    return ijson.backends.yajl.common.basic_parse(
-        _yajl, f, buf_size=buf_size,
-        allow_comments=allow_comments, check_utf8=check_utf8
-    )
+def basic_parse(f, buf_size=64*1024, **config):
+    '''
+    Iterator yielding unprefixed events.
+
+    Parameters:
+
+    - f: a readable file-like object with JSON input
+    - allow_comments: tells parser to allow comments in JSON input
+    - buf_size: a size of an input buffer
+    - multiple_values: allows the parser to parse multiple JSON objects
+    '''
+
+    # the scope objects makes sure the C objects allocated in _yajl.init
+    # are kept alive until this function is done
+    scope = Container()
+    events = []
+
+    handle = yajl_init(scope, events, **config)
+    try:
+        while True:
+            buffer = f.read(buf_size)
+            # this calls the callbacks which will
+            # fill the events list
+            yajl_parse(handle, buffer)
+
+            if not buffer and not events:
+                break
+
+            for event in events:
+                yield event
+
+            # clear all events, but don't replace the
+            # the events list instance
+            del events[:]
+    finally:
+        yajl.yajl_free(handle)
+
 
 def parse(file, **kwargs):
-    _yajl = sys.modules[__name__]
-    return ijson.backends.yajl.common.parse(_yajl, file, **kwargs)
-
+    '''
+    Backend-specific wrapper for ijson.common.parse.
+    '''
+    return common.parse(basic_parse(file, **kwargs))
 
 def items(file, prefix):
-    _yajl = sys.modules[__name__]
-    return ijson.backends.yajl.common.items(_yajl, file, prefix)
+    '''
+    Backend-specific wrapper for ijson.common.items.
+    '''
+    return common.items(parse(file), prefix)
