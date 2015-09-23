@@ -156,7 +156,7 @@ def parse_object(lexer):
             while True:
                 if symbol[0] != '"':
                     raise UnexpectedSymbol(symbol, pos)
-                yield ('map_key', symbol[1:-1])
+                yield ('map_key', unescape(symbol[1:-1]))
                 pos, symbol = next(lexer)
                 if symbol != ':':
                     raise UnexpectedSymbol(symbol, pos)
