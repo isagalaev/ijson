@@ -111,7 +111,7 @@ STRINGS_JSON = br'''
     "str2": "\"",
     "str3": "\\",
     "str4": "\\\\",
-    "special": "\b\f\n\r\t"
+    "special\t": "\b\f\n\r\t"
 }
 '''
 INT_NUMBERS_JSON = b'[1, 1.0, 1E2]'
@@ -139,6 +139,7 @@ class Parse(object):
         events = list(self.backend.basic_parse(BytesIO(STRINGS_JSON)))
         strings = [value for event, value in events if event == 'string']
         self.assertEqual(strings, ['', '"', '\\', '\\\\', '\b\f\n\r\t'])
+        self.assertTrue(('map_key', 'special\t') in events)
 
     def test_int_numbers(self):
         events = list(self.backend.basic_parse(BytesIO(INT_NUMBERS_JSON)))
