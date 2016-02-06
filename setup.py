@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'ijson',
-    version = '2.2',
+    version = '2.3',
     author = 'Ivan Sagalaev',
     author_email = 'maniac@softwaremaniacs.org',
     url = 'https://github.com/isagalaev/ijson',
