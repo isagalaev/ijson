@@ -5,9 +5,10 @@ from __future__ import unicode_literals
 import decimal
 import re
 from codecs import getreader
+from json.decoder import scanstring
 
 from ijson import common
-from ijson.compat import chr, bytetype
+from ijson.compat import bytetype
 
 
 BUFSIZE = 16 * 1024
@@ -70,38 +71,6 @@ def Lexer(f, buf_size=BUFSIZE):
             pos = 0
 
 
-def unescape(s):
-    start = 0
-    result = ''
-    while start < len(s):
-        pos = s.find('\\', start)
-        if pos == -1:
-            if start == 0:
-                return s
-            result += s[start:]
-            break
-        result += s[start:pos]
-        pos += 1
-        esc = s[pos]
-        if esc == 'u':
-            result += chr(int(s[pos + 1:pos + 5], 16))
-            pos += 4
-        elif esc == 'b':
-            result += '\b'
-        elif esc == 'f':
-            result += '\f'
-        elif esc == 'n':
-            result += '\n'
-        elif esc == 'r':
-            result += '\r'
-        elif esc == 't':
-            result += '\t'
-        else:
-            result += esc
-        start = pos + 1
-    return result
-
-
 def parse_value(lexer, symbol=None, pos=0):
     try:
         if symbol is None:
@@ -119,7 +88,7 @@ def parse_value(lexer, symbol=None, pos=0):
             for event in parse_object(lexer):
                 yield event
         elif symbol[0] == '"':
-            yield ('string', unescape(symbol[1:-1]))
+            yield ('string', parse_string(symbol))
         else:
             try:
                 yield ('number', common.number(symbol))
@@ -127,6 +96,10 @@ def parse_value(lexer, symbol=None, pos=0):
                 raise UnexpectedSymbol(symbol, pos)
     except StopIteration:
         raise common.IncompleteJSONError('Incomplete JSON data')
+
+
+def parse_string(symbol):
+    return scanstring(symbol[1:], 0)[0]
 
 
 def parse_array(lexer):
@@ -156,7 +129,7 @@ def parse_object(lexer):
             while True:
                 if symbol[0] != '"':
                     raise UnexpectedSymbol(symbol, pos)
-                yield ('map_key', unescape(symbol[1:-1]))
+                yield ('map_key', parse_string(symbol))
                 pos, symbol = next(lexer)
                 if symbol != ':':
                     raise UnexpectedSymbol(symbol, pos)
