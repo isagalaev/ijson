@@ -99,7 +99,7 @@ def parse_value(lexer, symbol=None, pos=0):
 
 
 def parse_string(symbol):
-    return scanstring(symbol[1:], 0)[0]
+    return scanstring(symbol, 1)[0]
 
 
 def parse_array(lexer):
