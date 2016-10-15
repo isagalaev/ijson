@@ -167,9 +167,9 @@ def yajl_init(scope, events, allow_comments=False, multiple_values=False):
     handle = yajl.yajl_alloc(scope.callbacks, ffi.NULL, scope.ctx)
 
     if allow_comments:
-        yajl.yajl_config(handle, YAJL_ALLOW_COMMENTS, 1)
+        yajl.yajl_config(handle, YAJL_ALLOW_COMMENTS, ffi.cast('int', 1))
     if multiple_values:
-        yajl.yajl_config(handle, YAJL_MULTIPLE_VALUES, 1)
+        yajl.yajl_config(handle, YAJL_MULTIPLE_VALUES, ffi.cast('int', 1))
 
     return handle
 
@@ -182,7 +182,7 @@ def yajl_parse(handle, buffer):
 
     if result != YAJL_OK:
         perror = yajl.yajl_get_error(handle, 1, buffer, len(buffer))
-        error = ffi.string(perror)
+        error = b2s(ffi.string(perror))
         yajl.yajl_free_error(handle, perror)
         exception = common.IncompleteJSONError if result == YAJL_INSUFFICIENT_DATA else common.JSONError
         raise exception(error)
