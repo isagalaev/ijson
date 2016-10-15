@@ -114,7 +114,7 @@ STRINGS_JSON = br'''
     "special\t": "\b\f\n\r\t"
 }
 '''
-INT_NUMBERS_JSON = b'[1, 1.0, 1E2]'
+NUMBERS_JSON = b'[1, 1.0, 1E2]'
 SURROGATE_PAIRS_JSON = b'"\uD83D\uDCA9"'
 
 
@@ -147,10 +147,10 @@ class Parse(object):
         parsed_string = event[1]
         self.assertEqual(parsed_string, '💩')
 
-    def test_int_numbers(self):
-        events = list(self.backend.basic_parse(BytesIO(INT_NUMBERS_JSON)))
-        numbers = [value for event, value in events if event == 'number']
-        self.assertTrue(all(type(n) is int  for n in numbers))
+    def test_numbers(self):
+        events = list(self.backend.basic_parse(BytesIO(NUMBERS_JSON)))
+        types = [type(value) for event, value in events if event == 'number']
+        self.assertEqual(types, [int, Decimal, Decimal])
 
     def test_invalid(self):
         for json in INVALID_JSONS:

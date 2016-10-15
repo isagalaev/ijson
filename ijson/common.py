@@ -156,7 +156,6 @@ def number(str_value):
     Used in different backends for consistent number representation.
     '''
     number = decimal.Decimal(str_value)
-    int_number = int(number)
-    if int_number == number:
-        number = int_number
+    if not ('.' in str_value or 'e' in str_value or 'E' in str_value):
+        number = int(number)
     return number
