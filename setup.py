@@ -1,8 +1,10 @@
+from importlib import import_module
+
 from setuptools import setup, find_packages
 
 setup(
     name = 'ijson',
-    version = '2.3',
+    version = import_module('ijson').__version__,
     author = 'Ivan Sagalaev',
     author_email = 'maniac@softwaremaniacs.org',
     url = 'https://github.com/isagalaev/ijson',
