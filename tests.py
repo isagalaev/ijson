@@ -115,6 +115,7 @@ STRINGS_JSON = br'''
 }
 '''
 INT_NUMBERS_JSON = b'[1, 1.0, 1E2]'
+SURROGATE_PAIRS_JSON = b'"\uD83D\uDCA9"'
 
 
 class Parse(object):
@@ -140,6 +141,11 @@ class Parse(object):
         strings = [value for event, value in events if event == 'string']
         self.assertEqual(strings, ['', '"', '\\', '\\\\', '\b\f\n\r\t'])
         self.assertTrue(('map_key', 'special\t') in events)
+
+    def test_surrogate_pairs(self):
+        event = next(self.backend.basic_parse(BytesIO(SURROGATE_PAIRS_JSON)))
+        parsed_string = event[1]
+        self.assertEqual(parsed_string, '💩')
 
     def test_int_numbers(self):
         events = list(self.backend.basic_parse(BytesIO(INT_NUMBERS_JSON)))
