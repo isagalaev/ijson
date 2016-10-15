@@ -142,6 +142,11 @@ class Parse(object):
         self.assertEqual(strings, ['', '"', '\\', '\\\\', '\b\f\n\r\t'])
         self.assertTrue(('map_key', 'special\t') in events)
 
+    def test_surrogate_pairs(self):
+        event = next(self.backend.basic_parse(BytesIO(SURROGATE_PAIRS_JSON)))
+        parsed_string = event[1]
+        self.assertEqual(parsed_string, '💩')
+
     def test_int_numbers(self):
         events = list(self.backend.basic_parse(BytesIO(INT_NUMBERS_JSON)))
         numbers = [value for event, value in events if event == 'number']
@@ -182,11 +187,6 @@ class Parse(object):
         buf_size = JSON.index(b'   ') + 1
         events = list(self.backend.basic_parse(BytesIO(JSON), buf_size=buf_size))
         self.assertEqual(events, JSON_EVENTS)
-
-    def test_surrogate_pairs(self):
-        event = next(self.backend.basic_parse(BytesIO(SURROGATE_PAIRS_JSON)))
-        parsed_string = event[1]
-        self.assertEqual(parsed_string, '💩')
 
     def test_api(self):
         self.assertTrue(list(self.backend.items(BytesIO(JSON), '')))
